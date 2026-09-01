@@ -1,5 +1,5 @@
-import type { Copia, Gioco, Prestito, Utente } from "@/lib/types";
-import { copieSeed, giochiSeed, prestitiSeed, utentiSeed } from "@/lib/mock/seed";
+import type { Copia, Gioco, Prestito, TerminBgg, Utente } from "@/lib/types";
+import { copieSeed, giochiSeed, prestitiSeed, terminiBggSeed, utentiSeed } from "@/lib/mock/seed";
 
 // Store in memoria che simula il database durante la fase di mock.
 // Agganciato a globalThis per sopravvivere al hot-reload di Next.js in
@@ -12,6 +12,7 @@ interface MockStore {
   copie: Copia[];
   utenti: Utente[];
   prestiti: Prestito[];
+  terminiBgg: TerminBgg[];
 }
 
 const globalForStore = globalThis as unknown as { __lesMockStore?: MockStore };
@@ -22,6 +23,7 @@ function creaStore(): MockStore {
     copie: structuredClone(copieSeed),
     utenti: structuredClone(utentiSeed),
     prestiti: structuredClone(prestitiSeed),
+    terminiBgg: structuredClone(terminiBggSeed),
   };
 }
 

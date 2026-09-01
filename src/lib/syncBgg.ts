@@ -1,8 +1,10 @@
 import "server-only";
 import { recuperaCollezioneBgg, recuperaDettagliBgg } from "@/lib/bgg";
-import { traduciDescrizioni } from "@/lib/deepl";
-import { getGiocoByBggId, sincronizzaGiocoDaBgg } from "@/lib/data/games";
+import { traduciTesti } from "@/lib/deepl";
+import { getGiocoByBggId, sincronizzaGiocoDaBgg, type DatiGiocoBgg } from "@/lib/data/games";
 import { creaCopia } from "@/lib/data/copies";
+import { getTraduzioneTermine, salvaTraduzioneTermine } from "@/lib/data/terminiBgg";
+import type { TipoTermineBgg } from "@/lib/types";
 
 export type ModalitaSyncBgg = "totale" | "parziale";
 
@@ -13,6 +15,8 @@ export interface RisultatoSyncBgg {
   totale: number;
   creati: number;
   aggiornati: number;
+  terminiTassonomia: number;
+  nuoviTerminiTradotti: number;
   errori: { bggId: number; messaggio: string }[];
 }
 
@@ -22,6 +26,51 @@ export type EsitoSyncBgg = { ok: true; dati: RisultatoSyncBgg } | { ok: false; s
 function prefissoCodice(titolo: string): string {
   const prefisso = titolo.replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase();
   return prefisso || "GEN";
+}
+
+// Categorie/meccaniche BGG sono un vocabolario chiuso (poche decine di
+// valori): si traduce ogni nome inglese una sola volta e si tiene in
+// anagrafica (src/lib/data/terminiBgg.ts, confronto case-insensitive) per non
+// richiamare DeepL di nuovo sugli stessi termini nelle sync successive.
+async function traduciTassonomie(dettagli: DatiGiocoBgg[]): Promise<{ nuoviTermini: number; termini: number }> {
+  const distinti = new Map<string, { tipo: TipoTermineBgg; nomeInglese: string }>();
+  for (const d of dettagli) {
+    for (const c of d.categorie) distinti.set(`categoria:${c.toLowerCase()}`, { tipo: "categoria", nomeInglese: c });
+    for (const m of d.meccaniche ?? []) {
+      distinti.set(`meccanica:${m.toLowerCase()}`, { tipo: "meccanica", nomeInglese: m });
+    }
+  }
+
+  const mappa = new Map<string, string>();
+  const daTradurre: { tipo: TipoTermineBgg; nomeInglese: string; chiave: string }[] = [];
+
+  for (const [chiave, voce] of distinti) {
+    const cache = await getTraduzioneTermine(voce.tipo, voce.nomeInglese);
+    if (cache) {
+      mappa.set(chiave, cache);
+    } else {
+      daTradurre.push({ ...voce, chiave });
+    }
+  }
+
+  if (daTradurre.length > 0) {
+    const tradotti = await traduciTesti(daTradurre.map((v) => v.nomeInglese));
+    for (let i = 0; i < daTradurre.length; i++) {
+      const { tipo, nomeInglese, chiave } = daTradurre[i];
+      const nomeItaliano = tradotti[i];
+      mappa.set(chiave, nomeItaliano);
+      await salvaTraduzioneTermine(tipo, nomeInglese, nomeItaliano);
+    }
+  }
+
+  for (const d of dettagli) {
+    d.categorie = d.categorie.map((c) => mappa.get(`categoria:${c.toLowerCase()}`) ?? c);
+    if (d.meccaniche) {
+      d.meccaniche = d.meccaniche.map((m) => mappa.get(`meccanica:${m.toLowerCase()}`) ?? m);
+    }
+  }
+
+  return { nuoviTermini: daTradurre.length, termini: distinti.size };
 }
 
 // Logica di sync condivisa tra la rotta admin (POST, manuale, protetta da
@@ -63,6 +112,8 @@ export async function eseguiSyncBgg(opts: { modalita: ModalitaSyncBgg; limite: n
     totale: daImportare.length,
     creati: 0,
     aggiornati: 0,
+    terminiTassonomia: 0,
+    nuoviTerminiTradotti: 0,
     errori: [],
   };
 
@@ -78,10 +129,13 @@ export async function eseguiSyncBgg(opts: { modalita: ModalitaSyncBgg; limite: n
       };
     }
 
-    const descrizioniTradotte = await traduciDescrizioni(dettagli.map((d) => d.descrizione));
+    const descrizioniTradotte = await traduciTesti(dettagli.map((d) => d.descrizione));
     dettagli.forEach((d, i) => {
       d.descrizione = descrizioniTradotte[i];
     });
+    const esitoTassonomie = await traduciTassonomie(dettagli);
+    risultati.terminiTassonomia = esitoTassonomie.termini;
+    risultati.nuoviTerminiTradotti = esitoTassonomie.nuoviTermini;
 
     for (const dati of dettagli) {
       try {

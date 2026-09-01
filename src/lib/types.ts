@@ -86,3 +86,15 @@ export interface GiocoConDisponibilita extends Gioco {
   copieTotali: number;
   copieDisponibili: number;
 }
+
+export type TipoTermineBgg = "categoria" | "meccanica";
+
+// Anagrafica delle traduzioni EN -> IT per categorie/meccaniche BGG: sono un
+// vocabolario chiuso (poche decine di valori), quindi si traduce ogni nome
+// una sola volta e si riusa per tutti i giochi/sync successivi. Il confronto
+// con nomeInglese e' sempre case-insensitive.
+export interface TerminBgg {
+  tipo: TipoTermineBgg;
+  nomeInglese: string;
+  nomeItaliano: string;
+}

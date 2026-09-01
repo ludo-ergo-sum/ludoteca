@@ -1,8 +1,8 @@
 import "server-only";
 
-// Traduzione best-effort delle descrizioni durante la sync BGG: se DeepL non
-// e' configurato o fallisce, si ricade sul testo originale (in inglese)
-// invece di interrompere l'importazione dei giochi.
+// Traduzione best-effort durante la sync BGG (descrizioni, categorie,
+// meccaniche): se DeepL non e' configurato o fallisce, si ricade sul testo
+// originale (in inglese) invece di interrompere l'importazione dei giochi.
 
 const DIMENSIONE_CHUNK = 50;
 
@@ -57,7 +57,7 @@ async function traduciChunk(testi: string[], chiave: string): Promise<string[]> 
   return testi;
 }
 
-export async function traduciDescrizioni(testi: string[]): Promise<string[]> {
+export async function traduciTesti(testi: string[]): Promise<string[]> {
   const chiave = process.env.DEEPL_API_KEY;
   if (!chiave || testi.length === 0) return testi;
 
