@@ -19,14 +19,19 @@ export async function richiediPrestitoAction(formData: FormData) {
 
   const copia = await getCopiaById(copiaId);
   if (!copia) throw new Error("Copia non trovata.");
-  if (copia.stato !== "disponibile") throw new Error("Questa copia non e' disponibile.");
 
   const annoCorrente = new Date().getFullYear();
   if (!socioInRegolaPerAnno(socio, annoCorrente)) {
     throw new Error("La quota associativa non risulta in regola per l'anno in corso: contatta la segreteria.");
   }
 
-  await richiediPrestito(copia.id, copia.giocoId, socio.id);
+  // Verifica di disponibilita' ripetuta qui (non solo a monte, quando la
+  // pagina e' stata renderizzata): tra il caricamento della pagina e il
+  // click qualcun altro potrebbe aver richiesto la stessa copia.
+  const prestito = await richiediPrestito(copia.id, copia.giocoId, socio.id);
+  if (!prestito) {
+    throw new Error("Questa copia non e' piu' disponibile: qualcun altro l'ha appena richiesta.");
+  }
 
   const gioco = await getGiocoById(copia.giocoId);
   if (gioco) {

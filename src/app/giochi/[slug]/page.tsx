@@ -8,9 +8,11 @@ import { getUtenteCorrente } from "@/lib/session";
 import { socioInRegolaPerAnno } from "@/lib/data/users";
 import { copertinaPerGioco } from "@/lib/palette";
 import { BadgeStatoCopia } from "@/components/StatusBadge";
+import { QrCodeCopia } from "@/components/QrCodeCopia";
 import { richiediPrestitoAction } from "@/lib/actions/loans";
 import { btnAmber, btnOutline } from "@/lib/ui";
 import { formattaIntervallo } from "@/lib/format";
+import { generaQrCodeSvg } from "@/lib/qrcode";
 
 const MOSTRATI = 2;
 
@@ -68,6 +70,22 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
   );
   const annoCorrente = new Date().getFullYear();
   const inRegola = utente ? socioInRegolaPerAnno(utente, annoCorrente) : false;
+
+  // Il QR si mostra solo per le copie disponibili (chiunque loggato puo'
+  // prenotarle) o per quelle attualmente in prestito al socio loggato
+  // stesso (per gestirle/restituirle) — il controllo e' server-side, non si
+  // basa su cosa il client mostra o nasconde.
+  const copieConQr = utente
+    ? await Promise.all(
+        copie.map(async (copia) => {
+          const eDelSocioLoggato = prestitiUtente.some(
+            (p) => p.copiaId === copia.id && (p.stato === "in_corso" || p.stato === "approvato")
+          );
+          const mostraQr = copia.stato === "disponibile" || (copia.stato === "in_prestito" && eDelSocioLoggato);
+          return { copia, qrSvg: mostraQr ? await generaQrCodeSvg(copia.codice) : null };
+        })
+      )
+    : [];
 
   const sezioniComplete = [
     { id: "dettagli-categorie", etichetta: "Categorie", valori: gioco.categorie },
@@ -202,10 +220,13 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
             <div className="paper-card rounded-2xl p-6">
               <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Copie in ludoteca</p>
               <ul className="mt-3 space-y-2">
-                {copie.map((copia) => (
+                {copieConQr.map(({ copia, qrSvg }) => (
                   <li key={copia.id} className="flex items-center justify-between gap-2 text-sm">
                     <span className="font-mono-tag text-ink/70">{copia.codice}</span>
-                    <BadgeStatoCopia stato={copia.stato} />
+                    <div className="flex items-center gap-2.5">
+                      <BadgeStatoCopia stato={copia.stato} />
+                      {qrSvg && <QrCodeCopia codice={copia.codice} qrSvg={qrSvg} />}
+                    </div>
                   </li>
                 ))}
               </ul>

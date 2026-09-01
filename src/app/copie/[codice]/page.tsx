@@ -39,22 +39,29 @@ export default async function CopiaPage({ params }: PageProps<"/copie/[codice]">
 
       <div className="mt-5 flex items-center gap-4">
         <div
-          className="flex h-16 w-16 flex-none items-center justify-center rounded-xl"
+          className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-xl"
           style={{ backgroundColor: copertina.bg }}
         >
-          <span className="font-display text-2xl font-bold" style={{ color: copertina.fg }}>
-            {gioco.titolo.charAt(0)}
-          </span>
+          {gioco.immagine ? (
+            // eslint-disable-next-line @next/next/no-img-element -- URL esterna (BGG), niente next/image config per un solo campo remoto
+            <img src={gioco.immagine} alt={gioco.titolo} className="h-full w-full object-cover" />
+          ) : (
+            <span className="font-display text-2xl font-bold" style={{ color: copertina.fg }}>
+              {gioco.titolo.charAt(0)}
+            </span>
+          )}
         </div>
         <div>
-          <p className="font-mono-tag text-xs text-ink/50">Copia</p>
-          <h1 className="font-mono-tag text-2xl font-semibold text-ink">{copia.codice}</h1>
-          <p className="text-sm text-ink/60">{gioco.titolo}</p>
+          <p className="font-mono-tag text-xs text-ink/50">Gioco</p>
+          <h1 className="font-display text-2xl font-semibold text-ink">{gioco.titolo}</h1>
+          <p className="font-mono-tag text-sm text-ink/60">Copia {copia.codice}</p>
         </div>
         <div className="ml-auto">
           <BadgeStatoCopia stato={copia.stato} />
         </div>
       </div>
+
+      {gioco.descrizione && <p className="mt-4 text-sm leading-relaxed text-ink/70">{gioco.descrizione}</p>}
 
       <div className="paper-card mt-6 rounded-2xl p-6">
         {!utente && (

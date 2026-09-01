@@ -39,7 +39,25 @@ export async function getStoricoByCopia(copiaId: string): Promise<Prestito[]> {
     .sort((a, b) => b.dataRichiesta.localeCompare(a.dataRichiesta));
 }
 
-export async function richiediPrestito(copiaId: string, giocoId: string, utenteId: string): Promise<Prestito> {
+// Il campo stato della copia passa a "in_prestito" solo quando l'admin
+// approva (vedi decidiPrestito), non alla richiesta: senza questo controllo
+// due richieste quasi simultanee sulla stessa copia "disponibile" potrebbero
+// entrambe passare, creando due prestiti in_attesa sulla stessa copia
+// fisica. Il controllo e l'inserimento avvengono nello stesso blocco
+// sincrono (nessun await in mezzo) apposta, per non lasciare una finestra di
+// race condition tra "verifico" e "creo" — stesso invariante che in Mongo
+// diventera' un indice/transazione, ma la firma della funzione non cambia.
+export async function richiediPrestito(
+  copiaId: string,
+  giocoId: string,
+  utenteId: string
+): Promise<Prestito | null> {
+  const copia = store.copie.find((c) => c.id === copiaId);
+  const giaRichiesta = store.prestiti.some(
+    (p) => p.copiaId === copiaId && (p.stato === "in_attesa" || p.stato === "approvato" || p.stato === "in_corso")
+  );
+  if (!copia || copia.stato !== "disponibile" || giaRichiesta) return null;
+
   const prestito: Prestito = {
     id: prossimoIdPrestito(),
     copiaId,
