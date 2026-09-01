@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/promemoria-prestiti",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/sync-bgg",
+      "schedule": "0 2 * * *"
     }
   ]
 }
