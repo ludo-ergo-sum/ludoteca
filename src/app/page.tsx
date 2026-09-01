@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ClipboardList, QrCode, Stamp } from "lucide-react";
 import { getGiochi } from "@/lib/data/games";
 import { auth } from "@/auth";
@@ -27,9 +28,7 @@ const passi = [
 ];
 
 export default async function Home() {
-  const [giochi, session] = await Promise.all([getGiochi(), auth()]);
-  const copieDisponibili = giochi.reduce((tot, g) => tot + g.copieDisponibili, 0);
-  const copieTotali = giochi.reduce((tot, g) => tot + g.copieTotali, 0);
+  const session = await auth();
 
   return (
     <div>
@@ -61,20 +60,9 @@ export default async function Home() {
 
           <div className="ticket-notch paper-card mx-auto w-full max-w-sm rounded-2xl p-6">
             <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Lo scaffale oggi</p>
-            <dl className="mt-4 space-y-3">
-              <div className="flex items-baseline justify-between border-b border-dashed border-ink/15 pb-3">
-                <dt className="text-sm text-ink/70">Giochi in catalogo</dt>
-                <dd className="font-display text-2xl text-ink">{giochi.length}</dd>
-              </div>
-              <div className="flex items-baseline justify-between border-b border-dashed border-ink/15 pb-3">
-                <dt className="text-sm text-ink/70">Copie disponibili ora</dt>
-                <dd className="font-display text-2xl text-felt">{copieDisponibili}</dd>
-              </div>
-              <div className="flex items-baseline justify-between">
-                <dt className="text-sm text-ink/70">Copie totali in ludoteca</dt>
-                <dd className="font-display text-2xl text-ink">{copieTotali}</dd>
-              </div>
-            </dl>
+            <Suspense fallback={<ScaffaleSkeleton />}>
+              <ScaffaleOggi />
+            </Suspense>
           </div>
         </div>
       </section>
@@ -100,9 +88,82 @@ export default async function Home() {
       <section id="catalogo" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <h2 className="font-display text-2xl font-semibold text-ink">Il catalogo</h2>
         <div className="mt-7">
-          <CatalogoGiochi giochi={giochi} />
+          <Suspense fallback={<CatalogoSkeleton />}>
+            <CatalogoSezione />
+          </Suspense>
         </div>
       </section>
+    </div>
+  );
+}
+
+async function ScaffaleOggi() {
+  const giochi = await getGiochi();
+  const copieDisponibili = giochi.reduce((tot, g) => tot + g.copieDisponibili, 0);
+  const copieTotali = giochi.reduce((tot, g) => tot + g.copieTotali, 0);
+
+  return (
+    <dl className="mt-4 space-y-3">
+      <div className="flex items-baseline justify-between border-b border-dashed border-ink/15 pb-3">
+        <dt className="text-sm text-ink/70">Giochi in catalogo</dt>
+        <dd className="font-display text-2xl text-ink">{giochi.length}</dd>
+      </div>
+      <div className="flex items-baseline justify-between border-b border-dashed border-ink/15 pb-3">
+        <dt className="text-sm text-ink/70">Copie disponibili ora</dt>
+        <dd className="font-display text-2xl text-felt">{copieDisponibili}</dd>
+      </div>
+      <div className="flex items-baseline justify-between">
+        <dt className="text-sm text-ink/70">Copie totali in ludoteca</dt>
+        <dd className="font-display text-2xl text-ink">{copieTotali}</dd>
+      </div>
+    </dl>
+  );
+}
+
+function ScaffaleSkeleton() {
+  return (
+    <dl className="mt-4 animate-pulse space-y-3">
+      {[0, 1].map((i) => (
+        <div key={i} className="flex items-baseline justify-between border-b border-dashed border-ink/15 pb-3">
+          <div className="h-3.5 w-32 rounded bg-ink/10" />
+          <div className="h-6 w-8 rounded bg-ink/10" />
+        </div>
+      ))}
+      <div className="flex items-baseline justify-between">
+        <div className="h-3.5 w-32 rounded bg-ink/10" />
+        <div className="h-6 w-8 rounded bg-ink/10" />
+      </div>
+    </dl>
+  );
+}
+
+async function CatalogoSezione() {
+  const giochi = await getGiochi();
+  return <CatalogoGiochi giochi={giochi} />;
+}
+
+function CatalogoSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="h-11 max-w-sm rounded-xl bg-ink/10" />
+      <div className="mt-3 flex flex-wrap gap-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-7 w-20 rounded-full bg-ink/10" />
+        ))}
+      </div>
+      <div className="mt-4 h-4 w-24 rounded bg-ink/10" />
+      <div className="mt-3 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-2xl border border-ink/10 bg-card">
+            <div className="h-40 bg-ink/10" />
+            <div className="flex flex-col gap-3 p-5">
+              <div className="h-5 w-3/4 rounded bg-ink/10" />
+              <div className="h-3 w-full rounded bg-ink/10" />
+              <div className="h-3 w-2/3 rounded bg-ink/10" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

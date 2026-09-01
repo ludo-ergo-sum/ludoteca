@@ -23,7 +23,7 @@ export async function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-2 sm:gap-3">
-          <Link href="/" className="hidden rounded-full px-3 py-2 text-sm font-medium text-card/85 hover:bg-white/10 sm:inline-block">
+          <Link href="/#catalogo" className="hidden rounded-full px-3 py-2 text-sm font-medium text-card/85 hover:bg-white/10 sm:inline-block">
             Catalogo giochi
           </Link>
 

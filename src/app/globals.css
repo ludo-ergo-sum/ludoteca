@@ -95,7 +95,7 @@ h1, h2, h3, h4, .font-display {
     transition: transform 180ms ease, box-shadow 180ms ease;
   }
   .hover-lift:hover {
-    transform: translateY(-3px);
+    transform: translateY(-6px);
   }
 }
 

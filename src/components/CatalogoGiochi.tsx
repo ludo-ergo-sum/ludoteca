@@ -3,21 +3,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import type { GiocoConDisponibilita } from "@/lib/types";
-import { btnSmall, inputBase } from "@/lib/ui";
+import { inputBase } from "@/lib/ui";
 import { GameBoxCard } from "@/components/GameBoxCard";
+import { SelettoreMultiplo } from "@/components/SelettoreMultiplo";
 
 const PER_PAGINA = 10;
+
+function opzioniDistinte(giochi: GiocoConDisponibilita[], campo: (g: GiocoConDisponibilita) => string[]): string[] {
+  return Array.from(new Set(giochi.flatMap(campo))).sort((a, b) => a.localeCompare(b));
+}
 
 export function CatalogoGiochi({ giochi }: { giochi: GiocoConDisponibilita[] }) {
   const [ricerca, setRicerca] = useState("");
   const [categorieSelezionate, setCategorieSelezionate] = useState<string[]>([]);
+  const [meccanicheSelezionate, setMeccanicheSelezionate] = useState<string[]>([]);
   const [visibili, setVisibili] = useState(PER_PAGINA);
   const sentinellaRef = useRef<HTMLDivElement>(null);
 
-  const categorieDisponibili = useMemo(
-    () => Array.from(new Set(giochi.flatMap((g) => g.categorie))).sort((a, b) => a.localeCompare(b)),
-    [giochi]
-  );
+  const categorieDisponibili = useMemo(() => opzioniDistinte(giochi, (g) => g.categorie), [giochi]);
+  const meccanicheDisponibili = useMemo(() => opzioniDistinte(giochi, (g) => g.meccaniche ?? []), [giochi]);
 
   const filtrati = useMemo(() => {
     const query = ricerca.trim().toLowerCase();
@@ -25,25 +29,24 @@ export function CatalogoGiochi({ giochi }: { giochi: GiocoConDisponibilita[] }) 
       const corrispondeTitolo = !query || g.titolo.toLowerCase().includes(query);
       const corrispondeCategoria =
         categorieSelezionate.length === 0 || g.categorie.some((c) => categorieSelezionate.includes(c));
-      return corrispondeTitolo && corrispondeCategoria;
+      const corrispondeMeccanica =
+        meccanicheSelezionate.length === 0 || (g.meccaniche ?? []).some((m) => meccanicheSelezionate.includes(m));
+      return corrispondeTitolo && corrispondeCategoria && corrispondeMeccanica;
     });
-  }, [giochi, ricerca, categorieSelezionate]);
+  }, [giochi, ricerca, categorieSelezionate, meccanicheSelezionate]);
 
-  const filtroAttuale = `${ricerca}|${categorieSelezionate.slice().sort().join(",")}`;
+  const filtroAttuale = `${ricerca}|${categorieSelezionate.slice().sort().join(",")}|${meccanicheSelezionate
+    .slice()
+    .sort()
+    .join(",")}`;
   const [filtroPrecedente, setFiltroPrecedente] = useState(filtroAttuale);
 
-  // Ogni cambio di ricerca o categoria riparte dalla prima pagina di
-  // risultati (aggiustamento di stato durante il render, non in un
-  // effetto: evita un render in piu').
+  // Ogni cambio di ricerca o filtro riparte dalla prima pagina di risultati
+  // (aggiustamento di stato durante il render, non in un effetto: evita un
+  // render in piu').
   if (filtroAttuale !== filtroPrecedente) {
     setFiltroPrecedente(filtroAttuale);
     setVisibili(PER_PAGINA);
-  }
-
-  function toggleCategoria(categoria: string) {
-    setCategorieSelezionate((prec) =>
-      prec.includes(categoria) ? prec.filter((c) => c !== categoria) : [...prec, categoria]
-    );
   }
 
   useEffect(() => {
@@ -67,49 +70,36 @@ export function CatalogoGiochi({ giochi }: { giochi: GiocoConDisponibilita[] }) 
 
   return (
     <div>
-      <div className="relative max-w-sm">
-        <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
-        <input
-          type="search"
-          value={ricerca}
-          onChange={(e) => setRicerca(e.target.value)}
-          placeholder="Cerca per titolo..."
-          className={`${inputBase} pl-9`}
-          aria-label="Cerca un gioco per titolo"
-        />
-      </div>
-
-      {categorieDisponibili.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {categorieDisponibili.map((categoria) => {
-            const selezionata = categorieSelezionate.includes(categoria);
-            return (
-              <button
-                key={categoria}
-                type="button"
-                onClick={() => toggleCategoria(categoria)}
-                aria-pressed={selezionata}
-                className={`${btnSmall} ${
-                  selezionata
-                    ? "bg-felt text-card"
-                    : "border border-ink/20 text-ink/70 hover:border-felt hover:text-felt"
-                }`}
-              >
-                {categoria}
-              </button>
-            );
-          })}
-          {categorieSelezionate.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setCategorieSelezionate([])}
-              className={`${btnSmall} text-ink/50 underline-offset-2 hover:text-felt hover:underline`}
-            >
-              Azzera filtri
-            </button>
-          )}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full min-w-[200px] flex-1">
+          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
+          <input
+            type="search"
+            value={ricerca}
+            onChange={(e) => setRicerca(e.target.value)}
+            placeholder="Cerca per titolo..."
+            className={`${inputBase} pl-9`}
+            aria-label="Cerca un gioco per titolo"
+          />
         </div>
-      )}
+
+        {categorieDisponibili.length > 0 && (
+          <SelettoreMultiplo
+            etichetta="Categorie"
+            opzioni={categorieDisponibili}
+            selezionati={categorieSelezionate}
+            onChange={setCategorieSelezionate}
+          />
+        )}
+        {meccanicheDisponibili.length > 0 && (
+          <SelettoreMultiplo
+            etichetta="Meccaniche"
+            opzioni={meccanicheDisponibili}
+            selezionati={meccanicheSelezionate}
+            onChange={setMeccanicheSelezionate}
+          />
+        )}
+      </div>
 
       <p className="mt-4 text-sm text-ink/50">
         {filtrati.length} {filtrati.length === 1 ? "gioco" : "giochi"}
