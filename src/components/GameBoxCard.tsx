@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Users, Clock, Baby } from "lucide-react";
 import type { GiocoConDisponibilita } from "@/lib/types";
 import { copertinaPerGioco } from "@/lib/palette";
+import { formattaIntervallo } from "@/lib/format";
 
 export function GameBoxCard({ gioco }: { gioco: GiocoConDisponibilita }) {
   const copertina = copertinaPerGioco(gioco.id);
@@ -16,19 +17,24 @@ export function GameBoxCard({ gioco }: { gioco: GiocoConDisponibilita }) {
         className="relative flex h-40 items-center justify-center overflow-hidden"
         style={{ backgroundColor: copertina.bg }}
       >
-        <span
-          className="font-display text-7xl font-bold opacity-90"
-          style={{ color: copertina.fg }}
-        >
-          {gioco.titolo.charAt(0)}
-        </span>
+        {gioco.immagine ? (
+          // eslint-disable-next-line @next/next/no-img-element -- URL esterna (BGG), niente next/image config per un solo campo remoto
+          <img src={gioco.immagine} alt={gioco.titolo} className="h-full w-full object-cover" />
+        ) : (
+          <span
+            className="font-display text-7xl font-bold opacity-90"
+            style={{ color: copertina.fg }}
+          >
+            {gioco.titolo.charAt(0)}
+          </span>
+        )}
         <span
           className="absolute inset-0 border-b-8"
           style={{ borderColor: copertina.ring }}
           aria-hidden
         />
         <span className="absolute right-3 top-3 rounded-full bg-card/90 px-2.5 py-1 text-xs font-semibold text-ink">
-          {esaurito ? "Tutte in prestito" : `${gioco.copieDisponibili} disponibili`}
+          {esaurito ? "Non disponibile" : "Prenotabile"}
         </span>
       </div>
 
@@ -48,10 +54,10 @@ export function GameBoxCard({ gioco }: { gioco: GiocoConDisponibilita }) {
 
         <div className="mt-auto flex items-center gap-4 border-t border-ink/10 pt-3 text-xs text-ink/60">
           <span className="inline-flex items-center gap-1">
-            <Users size={14} /> {gioco.giocatoriMin}-{gioco.giocatoriMax}
+            <Users size={14} /> {formattaIntervallo(gioco.giocatoriMin, gioco.giocatoriMax)}
           </span>
           <span className="inline-flex items-center gap-1">
-            <Clock size={14} /> {gioco.durataMinutiMin}-{gioco.durataMinutiMax}′
+            <Clock size={14} /> {formattaIntervallo(gioco.durataMinutiMin, gioco.durataMinutiMax)}′
           </span>
           <span className="inline-flex items-center gap-1">
             <Baby size={14} /> {gioco.etaMinima}+

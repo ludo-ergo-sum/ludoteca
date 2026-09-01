@@ -76,10 +76,15 @@ export async function recuperaCollezioneBgg(username: string): Promise<VoceColle
   throw new Error(`Collezione BGG di "${username}" non pronta dopo diversi tentativi, riprovare.`);
 }
 
-function primoLink(links: unknown[], tipo: string): string | undefined {
-  const link = (links as Array<Record<string, string>>).find((l) => l["@_type"] === tipo);
-  const valore = link?.["@_value"];
-  return valore ? decodificaTesto(valore) : undefined;
+function tuttiLink(links: unknown[], tipo: string): string[] {
+  return (links as Array<Record<string, string>>)
+    .filter((l) => l["@_type"] === tipo)
+    .map((l) => decodificaTesto(l["@_value"]));
+}
+
+function linkOpzionali(links: unknown[], tipo: string): string[] | undefined {
+  const valori = tuttiLink(links, tipo);
+  return valori.length > 0 ? valori : undefined;
 }
 
 function difficoltaDaPeso(peso: number): 1 | 2 | 3 | 4 | 5 {
@@ -118,9 +123,8 @@ export async function recuperaDettagliBgg(ids: number[]): Promise<DatiGiocoBgg[]
       const nomi = comeLista(item.name);
       const nomePrimario = nomi.find((n) => n["@_type"] === "primary") ?? nomi[0];
       const links = comeLista(item.link);
-      const categorie = (links as Array<Record<string, string>>)
-        .filter((l) => l["@_type"] === "boardgamecategory")
-        .map((l) => decodificaTesto(l["@_value"]));
+      const categorie = tuttiLink(links, "boardgamecategory");
+      const meccaniche = tuttiLink(links, "boardgamemechanic");
       const peso = Number(item?.statistics?.ratings?.averageweight?.["@_value"] ?? 0);
 
       risultati.push({
@@ -129,13 +133,15 @@ export async function recuperaDettagliBgg(ids: number[]): Promise<DatiGiocoBgg[]
         descrizione: decodificaTesto(item?.description),
         immagine: decodificaTesto(item?.image),
         categorie,
+        meccaniche: meccaniche.length > 0 ? meccaniche : undefined,
         giocatoriMin: Number(item?.minplayers?.["@_value"] ?? 1),
         giocatoriMax: Number(item?.maxplayers?.["@_value"] ?? 1),
         durataMinutiMin: Number(item?.minplaytime?.["@_value"] ?? 0),
         durataMinutiMax: Number(item?.maxplaytime?.["@_value"] ?? 0),
         etaMinima: Number(item?.minage?.["@_value"] ?? 0),
-        autore: primoLink(links, "boardgamedesigner"),
-        editore: primoLink(links, "boardgamepublisher"),
+        autore: linkOpzionali(links, "boardgamedesigner"),
+        editore: linkOpzionali(links, "boardgamepublisher"),
+        illustratori: linkOpzionali(links, "boardgameartist"),
         anno: item?.yearpublished?.["@_value"] ? Number(item.yearpublished["@_value"]) : undefined,
         difficolta: difficoltaDaPeso(peso),
       });

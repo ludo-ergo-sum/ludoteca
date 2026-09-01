@@ -45,8 +45,10 @@ export interface Gioco {
   durataMinutiMin: number;
   durataMinutiMax: number;
   etaMinima: number;
-  autore?: string;
-  editore?: string;
+  autore?: string[];
+  editore?: string[];
+  illustratori?: string[];
+  meccaniche?: string[];
   anno?: number;
   difficolta: 1 | 2 | 3 | 4 | 5;
   // Id del gioco su BoardGameGeek, usato per fare matching durante la sync
@@ -76,6 +78,8 @@ export interface Prestito {
   dataRestituzioneEffettiva: string | null;
   gestitoDa: string | null; // admin che ha registrato il rientro
   note?: string | null;
+  dataScadenza?: string | null; // ISO date, calcolata all'approvazione
+  promemoriaInviato?: boolean; // evita un doppio invio del promemoria di restituzione
 }
 
 export interface GiocoConDisponibilita extends Gioco {

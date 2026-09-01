@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recuperaCollezioneBgg, recuperaDettagliBgg } from "@/lib/bgg";
+import { traduciDescrizioni } from "@/lib/deepl";
 import { getGiocoByBggId, sincronizzaGiocoDaBgg } from "@/lib/data/games";
+import { creaCopia } from "@/lib/data/copies";
 
 export const maxDuration = 60;
 
@@ -9,6 +11,12 @@ type Modalita = "totale" | "parziale";
 interface CorpoRichiesta {
   modalita?: Modalita;
   limite?: number;
+}
+
+// Stesso criterio del prefisso suggerito nel form admin (src/app/admin/giochi/[id]/page.tsx).
+function prefissoCodice(titolo: string): string {
+  const prefisso = titolo.replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase();
+  return prefisso || "GEN";
 }
 
 export async function POST(req: NextRequest) {
@@ -76,11 +84,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const descrizioniTradotte = await traduciDescrizioni(dettagli.map((d) => d.descrizione));
+    dettagli.forEach((d, i) => {
+      d.descrizione = descrizioniTradotte[i];
+    });
+
     for (const dati of dettagli) {
       try {
-        const { creato } = await sincronizzaGiocoDaBgg(dati);
-        if (creato) risultati.creati += 1;
-        else risultati.aggiornati += 1;
+        const { gioco, creato } = await sincronizzaGiocoDaBgg(dati);
+        if (creato) {
+          risultati.creati += 1;
+          await creaCopia(gioco.id, prefissoCodice(gioco.titolo));
+        } else {
+          risultati.aggiornati += 1;
+        }
       } catch (errore) {
         risultati.errori.push({
           bggId: dati.bggId,

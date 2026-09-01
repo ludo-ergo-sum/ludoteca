@@ -52,13 +52,19 @@ function slugifica(titolo: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+// Il form manuale ha un campo di testo unico per autore/editore: qui si
+// converte nell'array che il modello dati usa uniformemente (coerente con
+// cio' che arriva dalla sync BGG, che puo' avere piu' di un nome).
 export async function creaGioco(dati: DatiNuovoGioco): Promise<Gioco> {
+  const { autore, editore, ...resto } = dati;
   const gioco: Gioco = {
     id: prossimoIdGioco(),
     slug: slugifica(dati.titolo),
     immagine: "",
     bggId: null,
-    ...dati,
+    ...resto,
+    autore: autore ? [autore] : undefined,
+    editore: editore ? [editore] : undefined,
   };
   store.giochi.push(gioco);
   return gioco;
@@ -67,7 +73,10 @@ export async function creaGioco(dati: DatiNuovoGioco): Promise<Gioco> {
 export async function aggiornaGioco(id: string, dati: Partial<DatiNuovoGioco>): Promise<Gioco | null> {
   const gioco = store.giochi.find((g) => g.id === id);
   if (!gioco) return null;
-  Object.assign(gioco, dati);
+  const { autore, editore, ...resto } = dati;
+  Object.assign(gioco, resto);
+  if (autore !== undefined) gioco.autore = autore ? [autore] : undefined;
+  if (editore !== undefined) gioco.editore = editore ? [editore] : undefined;
   return gioco;
 }
 
@@ -82,8 +91,10 @@ export interface DatiGiocoBgg {
   durataMinutiMin: number;
   durataMinutiMax: number;
   etaMinima: number;
-  autore?: string;
-  editore?: string;
+  autore?: string[];
+  editore?: string[];
+  illustratori?: string[];
+  meccaniche?: string[];
   anno?: number;
   difficolta: 1 | 2 | 3 | 4 | 5;
 }

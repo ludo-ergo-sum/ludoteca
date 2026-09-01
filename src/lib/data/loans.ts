@@ -2,6 +2,15 @@ import "server-only";
 import { store, prossimoIdPrestito } from "@/lib/mock/store";
 import type { Prestito } from "@/lib/types";
 
+const DURATA_PRESTITO_GIORNI = 360;
+const GIORNI_PREAVVISO_PROMEMORIA = 3;
+
+function aggiungiGiorni(dataIso: string, giorni: number): string {
+  const data = new Date(dataIso);
+  data.setDate(data.getDate() + giorni);
+  return data.toISOString().slice(0, 10);
+}
+
 export async function getPrestiti(): Promise<Prestito[]> {
   return store.prestiti;
 }
@@ -59,7 +68,23 @@ export async function decidiPrestito(
   prestito.dataApprovazione = new Date().toISOString().slice(0, 10);
   prestito.approvatoDa = gestoreNome;
   if (note) prestito.note = note;
+  if (approva) prestito.dataScadenza = aggiungiGiorni(prestito.dataApprovazione, DURATA_PRESTITO_GIORNI);
   return prestito;
+}
+
+// Prestiti in corso la cui scadenza cade esattamente a "oggi + preavviso" e
+// per cui il promemoria non e' ancora stato inviato (evita doppio invio se il
+// cron gira piu' volte sullo stesso giorno).
+export async function getPrestitiDaSollecitare(): Promise<Prestito[]> {
+  const sogliaData = aggiungiGiorni(new Date().toISOString().slice(0, 10), GIORNI_PREAVVISO_PROMEMORIA);
+  return store.prestiti.filter(
+    (p) => p.stato === "in_corso" && p.dataScadenza === sogliaData && !p.promemoriaInviato
+  );
+}
+
+export async function segnaPromemoriaInviato(prestitoId: string): Promise<void> {
+  const prestito = store.prestiti.find((p) => p.id === prestitoId);
+  if (prestito) prestito.promemoriaInviato = true;
 }
 
 export async function registraRientro(prestitoId: string, gestoreNome: string): Promise<Prestito | null> {

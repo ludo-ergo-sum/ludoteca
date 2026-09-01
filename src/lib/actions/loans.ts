@@ -10,7 +10,8 @@ import {
   richiediPrestito,
 } from "@/lib/data/loans";
 import { getGiocoById } from "@/lib/data/games";
-import { socioInRegolaPerAnno } from "@/lib/data/users";
+import { ADMIN_EMAILS, getUtenteById, socioInRegolaPerAnno } from "@/lib/data/users";
+import { inviaEmailDecisionePrestito, inviaEmailNuovaRichiesta } from "@/lib/email";
 
 export async function richiediPrestitoAction(formData: FormData) {
   const socio = await richiediSocio();
@@ -28,7 +29,10 @@ export async function richiediPrestitoAction(formData: FormData) {
   await richiediPrestito(copia.id, copia.giocoId, socio.id);
 
   const gioco = await getGiocoById(copia.giocoId);
-  if (gioco) revalidatePath(`/giochi/${gioco.slug}`);
+  if (gioco) {
+    revalidatePath(`/giochi/${gioco.slug}`);
+    await inviaEmailNuovaRichiesta(ADMIN_EMAILS, { giocoTitolo: gioco.titolo, socioNome: socio.nome });
+  }
   revalidatePath(`/copie/${copia.codice}`);
   revalidatePath("/profilo");
   revalidatePath("/admin/prestiti");
@@ -56,6 +60,11 @@ export async function decidiPrestitoAction(formData: FormData) {
 
   if (approva) {
     await impostaStatoCopia(prestito.copiaId, "in_prestito");
+  }
+
+  const [gioco, socio] = await Promise.all([getGiocoById(prestito.giocoId), getUtenteById(prestito.utenteId)]);
+  if (gioco && socio) {
+    await inviaEmailDecisionePrestito(socio, { giocoTitolo: gioco.titolo, approvato: approva, note: prestito.note ?? undefined });
   }
 
   revalidatePath("/admin/prestiti");

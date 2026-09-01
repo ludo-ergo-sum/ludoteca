@@ -2,7 +2,7 @@ import "server-only";
 import { store } from "@/lib/mock/store";
 import type { QuotaAnnuale, Ruolo, Utente } from "@/lib/types";
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "admin@ludoergosum.it")
+export const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "admin@ludoergosum.it")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
@@ -27,12 +27,12 @@ export async function trovaOCreaUtenteDaGoogle(profilo: {
   nome: string;
   email: string;
   immagine?: string | null;
-}): Promise<Utente> {
+}): Promise<{ utente: Utente; creato: boolean }> {
   const esistente = store.utenti.find((u) => u.googleId === profilo.googleId || u.email === profilo.email);
   if (esistente) {
     esistente.nome = profilo.nome;
     esistente.immagine = profilo.immagine ?? esistente.immagine;
-    return esistente;
+    return { utente: esistente, creato: false };
   }
 
   const ruolo: Ruolo = ADMIN_EMAILS.includes(profilo.email.toLowerCase()) ? "admin" : "socio";
@@ -47,7 +47,7 @@ export async function trovaOCreaUtenteDaGoogle(profilo: {
     quote: [],
   };
   store.utenti.push(nuovo);
-  return nuovo;
+  return { utente: nuovo, creato: true };
 }
 
 export async function impostaQuotaAnnuale(

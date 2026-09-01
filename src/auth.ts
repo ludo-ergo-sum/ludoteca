@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { getUtenteById, trovaOCreaUtenteDaGoogle } from "@/lib/data/users";
+import { inviaEmailBenvenuto } from "@/lib/email";
 import type { Ruolo } from "@/lib/types";
 
 // Login rapido per la fase di sviluppo/demo: entra direttamente come uno
@@ -36,12 +37,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, profile, user }) {
       if (profile) {
-        const utente = await trovaOCreaUtenteDaGoogle({
+        const { utente, creato } = await trovaOCreaUtenteDaGoogle({
           googleId: String(profile.sub),
           nome: String(profile.name ?? profile.email ?? "Socio"),
           email: String(profile.email),
           immagine: typeof profile.picture === "string" ? profile.picture : null,
         });
+        if (creato) await inviaEmailBenvenuto(utente);
         token.utenteId = utente.id;
         token.ruolo = utente.ruolo;
       } else if (user) {
