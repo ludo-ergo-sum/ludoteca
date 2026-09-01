@@ -1,11 +1,15 @@
 import { getGiochi } from "@/lib/data/games";
-import { getTutteLeCopie } from "@/lib/data/copies";
+import { getCopieSenzaEtichetta, getTutteLeCopie } from "@/lib/data/copies";
 import { creaGiocoAction } from "@/lib/actions/games";
 import { ListaGiochiAdmin } from "@/components/ListaGiochiAdmin";
-import { btnAmber, inputBase, labelBase } from "@/lib/ui";
+import { btnAmber, btnOutline, inputBase, labelBase } from "@/lib/ui";
 
 export default async function AdminGiochiPage() {
-  const [giochi, copie] = await Promise.all([getGiochi(), getTutteLeCopie()]);
+  const [giochi, copie, copieSenzaEtichetta] = await Promise.all([
+    getGiochi(),
+    getTutteLeCopie(),
+    getCopieSenzaEtichetta(),
+  ]);
   const giocoIdsConCopieSospese = Array.from(
     new Set(copie.filter((c) => c.stato === "offline").map((c) => c.giocoId))
   );
@@ -14,6 +18,26 @@ export default async function AdminGiochiPage() {
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <p className="font-mono-tag text-xs uppercase tracking-widest text-ink/50">Area amministrazione</p>
       <h1 className="mt-1 font-display text-3xl font-semibold text-ink">Giochi e copie</h1>
+
+      <div className="paper-card mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-5">
+        <p className="text-sm text-ink/70">
+          <span className="font-display text-xl text-ink">{copieSenzaEtichetta.length}</span> copie senza etichetta
+          stampata
+        </p>
+        <form action="/api/admin/etichette" method="POST" className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-xs text-ink/60">
+            <input
+              type="checkbox"
+              name="includiGiaStampate"
+              className="h-4 w-4 rounded border-ink/30 text-felt focus:ring-felt"
+            />
+            Includi anche le copie già stampate (ristampa tutto)
+          </label>
+          <button type="submit" className={btnOutline}>
+            Genera etichette da stampare
+          </button>
+        </form>
+      </div>
 
       <div className="mt-8">
         <ListaGiochiAdmin giochi={giochi} giocoIdsConCopieSospese={giocoIdsConCopieSospese} />

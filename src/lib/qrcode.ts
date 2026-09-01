@@ -16,3 +16,14 @@ export async function generaQrCodeSvg(codice: string): Promise<string> {
     color: { dark: "#1F4D3E", light: "#00000000" },
   });
 }
+
+// PNG (buffer) dello stesso QR, per embedderlo nel PDF delle etichette
+// (pdfkit non sa disegnare SVG, serve un'immagine raster).
+export async function generaQrCodePng(codice: string): Promise<Buffer> {
+  const url = urlSchedaCopia(codice);
+  return QRCode.toBuffer(url, {
+    type: "png",
+    margin: 1,
+    color: { dark: "#1F4D3E", light: "#FFFFFF" },
+  });
+}

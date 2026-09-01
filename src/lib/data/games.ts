@@ -157,6 +157,7 @@ export async function sincronizzaGiocoDaBgg(
     id: prossimoIdGioco(),
     slug: slugifica(dati.titolo),
     ...dati,
+    dataImportazioneBgg: new Date().toISOString().slice(0, 10),
   };
   store.giochi.push(gioco);
   return { gioco, creato: true };

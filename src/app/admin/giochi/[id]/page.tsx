@@ -181,6 +181,7 @@ export default async function AdminGiocoPage({ params }: PageProps<"/admin/gioch
               <p className="text-sm text-ink/70">
                 Sincronizzazione BGG:{" "}
                 {gioco.bggSyncBloccata ? "bloccata (gioco modificato a mano)" : "attiva"}.
+                {gioco.dataImportazioneBgg && ` Importato il ${gioco.dataImportazioneBgg}.`}
               </p>
               <label className="mt-2 flex items-center gap-2 text-sm text-ink/70">
                 <input

@@ -18,6 +18,18 @@ export async function getTutteLeCopie(): Promise<Copia[]> {
   return store.copie;
 }
 
+export async function getCopieSenzaEtichetta(): Promise<Copia[]> {
+  return store.copie.filter((c) => !c.dataStampaEtichetta);
+}
+
+export async function segnaEtichetteStampate(copiaIds: string[]): Promise<void> {
+  const oggi = new Date().toISOString().slice(0, 10);
+  const idSet = new Set(copiaIds);
+  for (const c of store.copie) {
+    if (idSet.has(c.id)) c.dataStampaEtichetta = oggi;
+  }
+}
+
 function prossimoNumeroPerPrefisso(prefisso: string): number {
   const esistenti = store.copie.filter((c) => c.codice.startsWith(`${prefisso}-`));
   return esistenti.length + 1;

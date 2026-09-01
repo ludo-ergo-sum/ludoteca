@@ -61,6 +61,9 @@ export interface Gioco {
   // true se un admin ha modificato a mano questo gioco dopo l'import: la
   // sync BGG non lo sovrascrive piu' finche' non viene riabilitata a mano.
   bggSyncBloccata?: boolean;
+  // ISO date, impostata solo alla creazione (mai aggiornata dai sync
+  // successivi): quando il gioco e' stato importato da BGG per la prima volta.
+  dataImportazioneBgg?: string | null;
 }
 
 export interface Copia {
@@ -71,6 +74,10 @@ export interface Copia {
   motivoOffline?: string | null;
   noteAdmin?: string | null; // visibile solo agli amministratori
   dataAcquisizione: string; // ISO date
+  // ISO date dell'ultima volta che e' stata generata l'etichetta da
+  // stampare per questa copia (nome gioco + codice + QR). Assente/null =
+  // non ancora stampata.
+  dataStampaEtichetta?: string | null;
 }
 
 export interface Prestito {

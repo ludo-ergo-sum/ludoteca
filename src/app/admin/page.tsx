@@ -1,14 +1,15 @@
 import Link from "next/link";
-import { Dices, PauseCircle, Stamp, UserX } from "lucide-react";
+import { Dices, PauseCircle, Stamp, Tag, UserX } from "lucide-react";
 import { getGiochi } from "@/lib/data/games";
-import { getTutteLeCopie } from "@/lib/data/copies";
+import { getCopieSenzaEtichetta, getTutteLeCopie } from "@/lib/data/copies";
 import { getPrestitiInAttesa } from "@/lib/data/loans";
 import { getSocie, socioInRegolaPerAnno } from "@/lib/data/users";
 
 export default async function AdminDashboard() {
-  const [giochi, copie, inAttesa, socie] = await Promise.all([
+  const [giochi, copie, copieSenzaEtichetta, inAttesa, socie] = await Promise.all([
     getGiochi(),
     getTutteLeCopie(),
+    getCopieSenzaEtichetta(),
     getPrestitiInAttesa(),
     getSocie(),
   ]);
@@ -37,6 +38,13 @@ export default async function AdminDashboard() {
       titolo: "Copie fuori linea",
       valore: offline.length,
       nota: "da verificare",
+    },
+    {
+      href: "/admin/giochi",
+      icona: Tag,
+      titolo: "Etichette da stampare",
+      valore: copieSenzaEtichetta.length,
+      nota: "copie senza etichetta",
     },
     {
       href: "/admin/socie",
