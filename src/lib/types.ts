@@ -49,6 +49,9 @@ export interface Gioco {
   editore?: string;
   anno?: number;
   difficolta: 1 | 2 | 3 | 4 | 5;
+  // Id del gioco su BoardGameGeek, usato per fare matching durante la sync
+  // dal catalogo master dell'associazione. Assente per i giochi creati a mano.
+  bggId?: number | null;
 }
 
 export interface Copia {

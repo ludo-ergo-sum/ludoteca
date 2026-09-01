@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ClipboardList, QrCode, Stamp } from "lucide-react";
 import { getGiochi } from "@/lib/data/games";
 import { auth } from "@/auth";
-import { GameBoxCard } from "@/components/GameBoxCard";
+import { CatalogoGiochi } from "@/components/CatalogoGiochi";
 import { btnAmber, btnOutline } from "@/lib/ui";
 
 const passi = [
@@ -98,14 +98,9 @@ export default async function Home() {
       </section>
 
       <section id="catalogo" className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-2xl font-semibold text-ink">Il catalogo</h2>
-          <span className="text-sm text-ink/50">{giochi.length} giochi</span>
-        </div>
-        <div className="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {giochi.map((gioco) => (
-            <GameBoxCard key={gioco.id} gioco={gioco} />
-          ))}
+        <h2 className="font-display text-2xl font-semibold text-ink">Il catalogo</h2>
+        <div className="mt-7">
+          <CatalogoGiochi giochi={giochi} />
         </div>
       </section>
     </div>

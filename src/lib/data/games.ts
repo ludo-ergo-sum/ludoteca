@@ -24,6 +24,10 @@ export async function getGiocoById(id: string): Promise<Gioco | null> {
   return store.giochi.find((g) => g.id === id) ?? null;
 }
 
+export async function getGiocoByBggId(bggId: number): Promise<Gioco | null> {
+  return store.giochi.find((g) => g.bggId === bggId) ?? null;
+}
+
 export interface DatiNuovoGioco {
   titolo: string;
   descrizione: string;
@@ -53,6 +57,7 @@ export async function creaGioco(dati: DatiNuovoGioco): Promise<Gioco> {
     id: prossimoIdGioco(),
     slug: slugifica(dati.titolo),
     immagine: "",
+    bggId: null,
     ...dati,
   };
   store.giochi.push(gioco);
@@ -64,4 +69,42 @@ export async function aggiornaGioco(id: string, dati: Partial<DatiNuovoGioco>): 
   if (!gioco) return null;
   Object.assign(gioco, dati);
   return gioco;
+}
+
+export interface DatiGiocoBgg {
+  bggId: number;
+  titolo: string;
+  descrizione: string;
+  immagine: string;
+  categorie: string[];
+  giocatoriMin: number;
+  giocatoriMax: number;
+  durataMinutiMin: number;
+  durataMinutiMax: number;
+  etaMinima: number;
+  autore?: string;
+  editore?: string;
+  anno?: number;
+  difficolta: 1 | 2 | 3 | 4 | 5;
+}
+
+// Sync one-way dal catalogo master su BoardGameGeek: se esiste gia' un gioco
+// con questo bggId ne aggiorna i dati (senza toccare id/slug, per non rompere
+// QR/copie/URL gia' in circolazione), altrimenti lo crea.
+export async function sincronizzaGiocoDaBgg(
+  dati: DatiGiocoBgg
+): Promise<{ gioco: Gioco; creato: boolean }> {
+  const esistente = store.giochi.find((g) => g.bggId === dati.bggId);
+  if (esistente) {
+    Object.assign(esistente, dati);
+    return { gioco: esistente, creato: false };
+  }
+
+  const gioco: Gioco = {
+    id: prossimoIdGioco(),
+    slug: slugifica(dati.titolo),
+    ...dati,
+  };
+  store.giochi.push(gioco);
+  return { gioco, creato: true };
 }
