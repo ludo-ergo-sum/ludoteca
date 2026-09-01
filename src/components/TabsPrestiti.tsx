@@ -7,12 +7,9 @@ import { BadgeStatoPrestito } from "@/components/StatusBadge";
 import { SelettoreMultiplo } from "@/components/SelettoreMultiplo";
 import { annullaPrestitoAction } from "@/lib/actions/loans";
 import { btnOutline, btnSmall, inputBase } from "@/lib/ui";
+import { opzioniDistinte } from "@/lib/filtri";
 
 const PER_PAGINA = 5;
-
-function opzioniDistinte(prestiti: PrestitoConDettagli[], campo: (p: PrestitoConDettagli) => string[]): string[] {
-  return Array.from(new Set(prestiti.flatMap(campo))).sort((a, b) => a.localeCompare(b));
-}
 
 export function TabsPrestiti({
   attivi,

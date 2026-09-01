@@ -6,12 +6,9 @@ import type { GiocoConDisponibilita } from "@/lib/types";
 import { inputBase } from "@/lib/ui";
 import { GameBoxCard } from "@/components/GameBoxCard";
 import { SelettoreMultiplo } from "@/components/SelettoreMultiplo";
+import { opzioniDistinte } from "@/lib/filtri";
 
 const PER_PAGINA = 10;
-
-function opzioniDistinte(giochi: GiocoConDisponibilita[], campo: (g: GiocoConDisponibilita) => string[]): string[] {
-  return Array.from(new Set(giochi.flatMap(campo))).sort((a, b) => a.localeCompare(b));
-}
 
 export function CatalogoGiochi({ giochi }: { giochi: GiocoConDisponibilita[] }) {
   const [ricerca, setRicerca] = useState("");

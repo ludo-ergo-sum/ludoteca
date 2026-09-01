@@ -28,6 +28,20 @@ export async function getGiocoByBggId(bggId: number): Promise<Gioco | null> {
   return store.giochi.find((g) => g.bggId === bggId) ?? null;
 }
 
+// Elimina anche le copie del gioco (altrimenti resterebbero orfane). Lo
+// storico prestiti che referenzia queste copie/questo gioco resta invece
+// intatto: gia' gestisce gioco/copia assenti (vedi PrestitoConDettagli).
+// Se il gioco proviene da BGG, la prossima sync lo ricrea da capo.
+export async function eliminaGioco(id: string): Promise<boolean> {
+  const indice = store.giochi.findIndex((g) => g.id === id);
+  if (indice === -1) return false;
+  store.giochi.splice(indice, 1);
+  for (let i = store.copie.length - 1; i >= 0; i--) {
+    if (store.copie[i].giocoId === id) store.copie.splice(i, 1);
+  }
+  return true;
+}
+
 export interface DatiNuovoGioco {
   titolo: string;
   descrizione: string;
@@ -70,13 +84,37 @@ export async function creaGioco(dati: DatiNuovoGioco): Promise<Gioco> {
   return gioco;
 }
 
-export async function aggiornaGioco(id: string, dati: Partial<DatiNuovoGioco>): Promise<Gioco | null> {
+export interface DatiModificaGioco {
+  titolo: string;
+  descrizione: string;
+  immagine: string;
+  miniatura?: string;
+  categorie: string[];
+  meccaniche?: string[];
+  giocatoriMin: number;
+  giocatoriMax: number;
+  durataMinutiMin: number;
+  durataMinutiMax: number;
+  etaMinima: number;
+  autore?: string[];
+  editore?: string[];
+  illustratori?: string[];
+  anno?: number;
+  difficolta: 1 | 2 | 3 | 4 | 5;
+}
+
+// Form di modifica in /admin/giochi/[id]: a differenza di creaGioco, qui si
+// modifica un gioco che puo' provenire dalla sync BGG, quindi bisogna anche
+// decidere se la sync deve poter tornare a sovrascriverlo (permettiSyncBgg).
+export async function aggiornaGioco(
+  id: string,
+  dati: DatiModificaGioco,
+  permettiSyncBgg: boolean
+): Promise<Gioco | null> {
   const gioco = store.giochi.find((g) => g.id === id);
   if (!gioco) return null;
-  const { autore, editore, ...resto } = dati;
-  Object.assign(gioco, resto);
-  if (autore !== undefined) gioco.autore = autore ? [autore] : undefined;
-  if (editore !== undefined) gioco.editore = editore ? [editore] : undefined;
+  Object.assign(gioco, dati);
+  gioco.bggSyncBloccata = !permettiSyncBgg;
   return gioco;
 }
 
@@ -85,6 +123,7 @@ export interface DatiGiocoBgg {
   titolo: string;
   descrizione: string;
   immagine: string;
+  miniatura?: string;
   categorie: string[];
   giocatoriMin: number;
   giocatoriMax: number;
@@ -107,6 +146,9 @@ export async function sincronizzaGiocoDaBgg(
 ): Promise<{ gioco: Gioco; creato: boolean }> {
   const esistente = store.giochi.find((g) => g.bggId === dati.bggId);
   if (esistente) {
+    // Rete di sicurezza oltre al filtro fatto a monte in syncBgg.ts: un
+    // admin ha modificato questo gioco a mano, la sync non lo tocca piu'.
+    if (esistente.bggSyncBloccata) return { gioco: esistente, creato: false };
     Object.assign(esistente, dati);
     return { gioco: esistente, creato: false };
   }

@@ -42,9 +42,9 @@ export default async function CopiaPage({ params }: PageProps<"/copie/[codice]">
           className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-xl"
           style={{ backgroundColor: copertina.bg }}
         >
-          {gioco.immagine ? (
+          {gioco.miniatura || gioco.immagine ? (
             // eslint-disable-next-line @next/next/no-img-element -- URL esterna (BGG), niente next/image config per un solo campo remoto
-            <img src={gioco.immagine} alt={gioco.titolo} className="h-full w-full object-cover" />
+            <img src={gioco.miniatura || gioco.immagine} alt={gioco.titolo} className="h-full w-full object-cover" />
           ) : (
             <span className="font-display text-2xl font-bold" style={{ color: copertina.fg }}>
               {gioco.titolo.charAt(0)}

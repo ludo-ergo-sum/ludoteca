@@ -132,6 +132,7 @@ export async function recuperaDettagliBgg(ids: number[]): Promise<DatiGiocoBgg[]
         titolo: decodificaTesto(nomePrimario?.["@_value"]),
         descrizione: decodificaTesto(item?.description),
         immagine: decodificaTesto(item?.image),
+        miniatura: decodificaTesto(item?.thumbnail),
         categorie,
         meccaniche: meccaniche.length > 0 ? meccaniche : undefined,
         giocatoriMin: Number(item?.minplayers?.["@_value"] ?? 1),

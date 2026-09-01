@@ -53,3 +53,13 @@ export async function aggiornaNoteAdminAction(formData: FormData) {
 
   await revalidaGioco(copia.giocoId);
 }
+
+export async function rimuoviNoteAdminAction(formData: FormData) {
+  await richiediAdmin();
+  const copiaId = String(formData.get("copiaId"));
+
+  const copia = await aggiornaNoteAdmin(copiaId, "");
+  if (!copia) throw new Error("Copia non trovata.");
+
+  await revalidaGioco(copia.giocoId);
+}

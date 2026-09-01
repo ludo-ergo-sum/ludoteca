@@ -39,6 +39,10 @@ export interface Gioco {
   titolo: string;
   descrizione: string;
   immagine: string;
+  // Versione piccola di "immagine" fornita direttamente da BGG (campo
+  // thumbnail), usata dove serve un'anteprima piccola invece di ridimensionare
+  // via CSS l'immagine grande. Assente per i giochi creati a mano.
+  miniatura?: string;
   categorie: string[];
   giocatoriMin: number;
   giocatoriMax: number;
@@ -54,6 +58,9 @@ export interface Gioco {
   // Id del gioco su BoardGameGeek, usato per fare matching durante la sync
   // dal catalogo master dell'associazione. Assente per i giochi creati a mano.
   bggId?: number | null;
+  // true se un admin ha modificato a mano questo gioco dopo l'import: la
+  // sync BGG non lo sovrascrive piu' finche' non viene riabilitata a mano.
+  bggSyncBloccata?: boolean;
 }
 
 export interface Copia {

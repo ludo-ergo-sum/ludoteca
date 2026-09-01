@@ -57,9 +57,17 @@ async function traduciChunk(testi: string[], chiave: string): Promise<string[]> 
   return testi;
 }
 
+// ENABLE_DEEPL_TRANSLATION=false permette di disattivare la traduzione senza
+// toccare DEEPL_API_KEY: comodo in sviluppo, dove riavviare spesso il server
+// azzera lo store in memoria e ogni sync successiva ritraduce tutto da capo,
+// consumando la quota DeepL per niente.
+export function traduzioneAttiva(): boolean {
+  return Boolean(process.env.DEEPL_API_KEY) && process.env.ENABLE_DEEPL_TRANSLATION !== "false";
+}
+
 export async function traduciTesti(testi: string[]): Promise<string[]> {
-  const chiave = process.env.DEEPL_API_KEY;
-  if (!chiave || testi.length === 0) return testi;
+  if (!traduzioneAttiva() || testi.length === 0) return testi;
+  const chiave = process.env.DEEPL_API_KEY as string;
 
   const risultati: string[] = [];
   for (let i = 0; i < testi.length; i += DIMENSIONE_CHUNK) {

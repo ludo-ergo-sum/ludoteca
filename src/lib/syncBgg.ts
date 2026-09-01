@@ -1,6 +1,6 @@
 import "server-only";
 import { recuperaCollezioneBgg, recuperaDettagliBgg } from "@/lib/bgg";
-import { traduciTesti } from "@/lib/deepl";
+import { traduciTesti, traduzioneAttiva } from "@/lib/deepl";
 import { getGiocoByBggId, sincronizzaGiocoDaBgg, type DatiGiocoBgg } from "@/lib/data/games";
 import { creaCopia } from "@/lib/data/copies";
 import { getTraduzioneTermine, salvaTraduzioneTermine } from "@/lib/data/terminiBgg";
@@ -15,6 +15,7 @@ export interface RisultatoSyncBgg {
   totale: number;
   creati: number;
   aggiornati: number;
+  saltati: number;
   terminiTassonomia: number;
   nuoviTerminiTradotti: number;
   errori: { bggId: number; messaggio: string }[];
@@ -55,11 +56,16 @@ async function traduciTassonomie(dettagli: DatiGiocoBgg[]): Promise<{ nuoviTermi
 
   if (daTradurre.length > 0) {
     const tradotti = await traduciTesti(daTradurre.map((v) => v.nomeInglese));
+    // Se la traduzione e' disattivata (vedi ENABLE_DEEPL_TRANSLATION),
+    // traduciTesti ritorna il testo inglese invariato: non lo si salva in
+    // anagrafica come se fosse la traduzione definitiva, altrimenti
+    // resterebbe in inglese per sempre anche a traduzione riattivata.
+    const daMemorizzare = traduzioneAttiva();
     for (let i = 0; i < daTradurre.length; i++) {
       const { tipo, nomeInglese, chiave } = daTradurre[i];
       const nomeItaliano = tradotti[i];
       mappa.set(chiave, nomeItaliano);
-      await salvaTraduzioneTermine(tipo, nomeInglese, nomeItaliano);
+      if (daMemorizzare) await salvaTraduzioneTermine(tipo, nomeInglese, nomeItaliano);
     }
   }
 
@@ -105,6 +111,22 @@ export async function eseguiSyncBgg(opts: { modalita: ModalitaSyncBgg; limite: n
     daImportare = nonAncoraImportati;
   }
 
+  // Un admin puo' aver modificato a mano un gioco gia' importato: si filtra
+  // qui, prima di chiamare BGG/DeepL, per non sprecare la traduzione su un
+  // risultato che verrebbe comunque scartato (vedi guardia in
+  // sincronizzaGiocoDaBgg, che resta comunque la rete di sicurezza finale).
+  let saltati = 0;
+  const daImportareFiltrati = [];
+  for (const voce of daImportare) {
+    const esistente = await getGiocoByBggId(voce.bggId);
+    if (esistente?.bggSyncBloccata) {
+      saltati++;
+    } else {
+      daImportareFiltrati.push(voce);
+    }
+  }
+  daImportare = daImportareFiltrati;
+
   const risultati: RisultatoSyncBgg = {
     modalita: opts.modalita,
     limite: opts.limite,
@@ -112,6 +134,7 @@ export async function eseguiSyncBgg(opts: { modalita: ModalitaSyncBgg; limite: n
     totale: daImportare.length,
     creati: 0,
     aggiornati: 0,
+    saltati,
     terminiTassonomia: 0,
     nuoviTerminiTradotti: 0,
     errori: [],

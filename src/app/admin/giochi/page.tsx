@@ -1,42 +1,22 @@
-import Link from "next/link";
 import { getGiochi } from "@/lib/data/games";
+import { getTutteLeCopie } from "@/lib/data/copies";
 import { creaGiocoAction } from "@/lib/actions/games";
-import { copertinaPerGioco } from "@/lib/palette";
+import { ListaGiochiAdmin } from "@/components/ListaGiochiAdmin";
 import { btnAmber, inputBase, labelBase } from "@/lib/ui";
 
 export default async function AdminGiochiPage() {
-  const giochi = await getGiochi();
+  const [giochi, copie] = await Promise.all([getGiochi(), getTutteLeCopie()]);
+  const giocoIdsConCopieSospese = Array.from(
+    new Set(copie.filter((c) => c.stato === "offline").map((c) => c.giocoId))
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <p className="font-mono-tag text-xs uppercase tracking-widest text-ink/50">Area amministrazione</p>
       <h1 className="mt-1 font-display text-3xl font-semibold text-ink">Giochi e copie</h1>
 
-      <div className="mt-8 space-y-3">
-        {giochi.map((gioco) => {
-          const copertina = copertinaPerGioco(gioco.id);
-          return (
-            <Link
-              key={gioco.id}
-              href={`/admin/giochi/${gioco.id}`}
-              className="hover-lift paper-card flex items-center gap-4 rounded-2xl p-4"
-            >
-              <span
-                className="flex h-12 w-12 flex-none items-center justify-center rounded-xl font-display text-lg font-bold"
-                style={{ backgroundColor: copertina.bg, color: copertina.fg }}
-              >
-                {gioco.titolo.charAt(0)}
-              </span>
-              <div className="flex-1">
-                <p className="font-display text-lg text-ink">{gioco.titolo}</p>
-                <p className="text-xs text-ink/50">
-                  {gioco.copieDisponibili} disponibili su {gioco.copieTotali} copie
-                </p>
-              </div>
-              <span className="text-sm text-felt">Gestisci copie →</span>
-            </Link>
-          );
-        })}
+      <div className="mt-8">
+        <ListaGiochiAdmin giochi={giochi} giocoIdsConCopieSospese={giocoIdsConCopieSospese} />
       </div>
 
       <details className="paper-card mt-10 rounded-2xl p-6">
