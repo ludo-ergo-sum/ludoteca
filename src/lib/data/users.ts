@@ -50,6 +50,13 @@ export async function trovaOCreaUtenteDaGoogle(profilo: {
   return { utente: nuovo, creato: true };
 }
 
+export async function impostaRuolo(utenteId: string, ruolo: Ruolo): Promise<Utente | null> {
+  const utente = store.utenti.find((u) => u.id === utenteId);
+  if (!utente) return null;
+  utente.ruolo = ruolo;
+  return utente;
+}
+
 export async function impostaQuotaAnnuale(
   utenteId: string,
   anno: number,
