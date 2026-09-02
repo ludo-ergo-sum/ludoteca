@@ -1,10 +1,12 @@
 import type {
   Copia,
   Gioco,
+  ImpostazioniEmail,
   Preferito,
   Prestito,
   Recensione,
   RichiestaAcquisto,
+  TemplateEmail,
   TerminBgg,
   Utente,
 } from "@/lib/types";
@@ -112,6 +114,47 @@ export const terminiBggSeed: TerminBgg[] = [];
 export const recensioniSeed: Recensione[] = [];
 export const preferitiSeed: Preferito[] = [];
 export const richiesteAcquistoSeed: RichiestaAcquisto[] = [];
+
+// Precompilati col testo identico a quello prima hardcoded in src/lib/email.ts:
+// finche' nessun admin li modifica da /admin/email, le email restano uguali a
+// prima (nessuna regressione visibile).
+export const impostazioniEmailSeed: ImpostazioniEmail = {
+  intestazione: "Ludo Ergo Sum — Ludoteca associativa",
+  piePagina: "Ludo Ergo Sum · Via Foce 40, Imperia",
+};
+
+export const templateEmailSeed: TemplateEmail[] = [
+  {
+    chiave: "benvenuto",
+    oggetto: "Benvenuto in Ludo Ergo Sum",
+    corpo:
+      "Ciao {{nome}},\n\nBenvenuto/a in Ludo Ergo Sum! Da ora puoi sfogliare il catalogo e richiedere in prestito i giochi disponibili in ludoteca.\n\nA presto in via Foce 40.",
+  },
+  {
+    chiave: "nuovaRichiesta",
+    oggetto: "Nuova richiesta di prestito: {{giocoTitolo}}",
+    corpo:
+      "{{socioNome}} ha richiesto in prestito {{giocoTitolo}}.\n\nVai su /admin/prestiti per approvare o rifiutare la richiesta.",
+  },
+  {
+    chiave: "decisionePrestito",
+    oggetto: "Richiesta {{risultato}}: {{giocoTitolo}}",
+    corpo:
+      "Ciao {{nome}},\n\nLa tua richiesta per {{giocoTitolo}} è stata {{esito}}.\n\n{{nota}}",
+  },
+  {
+    chiave: "promemoria",
+    oggetto: "Promemoria: restituzione di {{giocoTitolo}}",
+    corpo:
+      "Ciao {{nome}},\n\nIl prestito di {{giocoTitolo}} scade il {{dataScadenza}}. Ricordati di riportarlo in ludoteca.",
+  },
+  {
+    chiave: "nuovaRichiestaAcquisto",
+    oggetto: "Richiesta d'acquisto: {{espansioneTitolo}}",
+    corpo:
+      "{{socioNome}} ha segnalato {{espansioneTitolo}} (espansione di {{giocoBaseTitolo}}) come non presente in catalogo.\n\n{{messaggio}}\n\nVai su /admin/richieste-acquisto per gestire la richiesta.",
+  },
+];
 
 export const copieSeed: Copia[] = [
   { id: "c1", giocoId: "g1", codice: "CAT-01", stato: "disponibile", noteAdmin: null, dataAcquisizione: "2023-03-01" },

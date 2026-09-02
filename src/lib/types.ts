@@ -138,6 +138,29 @@ export interface RichiestaAcquisto {
   stato: StatoRichiestaAcquisto;
 }
 
+export type ChiaveEmail =
+  | "benvenuto"
+  | "nuovaRichiesta"
+  | "decisionePrestito"
+  | "promemoria"
+  | "nuovaRichiestaAcquisto";
+
+// Oggetto/corpo modificabili dalla segreteria in /admin/email, testo semplice
+// con placeholder {{nome}} (vedi SEGNAPOSTO_EMAIL nella pagina admin per
+// l'elenco disponibile per ciascuna chiave).
+export interface TemplateEmail {
+  chiave: ChiaveEmail;
+  oggetto: string;
+  corpo: string;
+}
+
+// Intestazione/piè di pagina, condivisi da tutte le email (singleton, non una
+// collection: un solo documento di impostazioni).
+export interface ImpostazioniEmail {
+  intestazione: string;
+  piePagina: string;
+}
+
 export type TipoTermineBgg = "categoria" | "meccanica";
 
 // Anagrafica delle traduzioni EN -> IT per categorie/meccaniche BGG: sono un

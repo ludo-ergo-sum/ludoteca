@@ -7,6 +7,7 @@ const tabs = [
   { href: "/admin/prestiti", label: "Prestiti" },
   { href: "/admin/richieste-acquisto", label: "Richieste d'acquisto" },
   { href: "/admin/socie", label: "Socie e quote" },
+  { href: "/admin/email", label: "Email" },
 ];
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {

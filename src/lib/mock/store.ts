@@ -1,20 +1,24 @@
 import type {
   Copia,
   Gioco,
+  ImpostazioniEmail,
   Preferito,
   Prestito,
   Recensione,
   RichiestaAcquisto,
+  TemplateEmail,
   TerminBgg,
   Utente,
 } from "@/lib/types";
 import {
   copieSeed,
   giochiSeed,
+  impostazioniEmailSeed,
   preferitiSeed,
   prestitiSeed,
   recensioniSeed,
   richiesteAcquistoSeed,
+  templateEmailSeed,
   terminiBggSeed,
   utentiSeed,
 } from "@/lib/mock/seed";
@@ -34,6 +38,8 @@ interface MockStore {
   recensioni: Recensione[];
   preferiti: Preferito[];
   richiesteAcquisto: RichiestaAcquisto[];
+  templateEmail: TemplateEmail[];
+  impostazioniEmail: ImpostazioniEmail;
 }
 
 const globalForStore = globalThis as unknown as { __lesMockStore?: MockStore };
@@ -48,6 +54,8 @@ function creaStore(): MockStore {
     recensioni: structuredClone(recensioniSeed),
     preferiti: structuredClone(preferitiSeed),
     richiesteAcquisto: structuredClone(richiesteAcquistoSeed),
+    templateEmail: structuredClone(templateEmailSeed),
+    impostazioniEmail: structuredClone(impostazioniEmailSeed),
   };
 }
 
