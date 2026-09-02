@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Dice5, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { auth, signOut } from "@/auth";
+import { SelettoreTema } from "@/components/SelettoreTema";
 import { btnAmber, btnSmall } from "@/lib/ui";
 
 export async function Navbar() {
@@ -32,6 +33,8 @@ export async function Navbar() {
               <ShieldCheck size={14} /> Area admin
             </Link>
           )}
+
+          <SelettoreTema />
 
           {utente ? (
             <>

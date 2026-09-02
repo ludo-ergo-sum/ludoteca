@@ -20,6 +20,71 @@
   --font-mono: var(--font-plex-mono);
 }
 
+/* Temi grafici alternativi, in valutazione dal cliente: il selettore in Navbar
+   scrive l'id scelto in data-tema sull'html. "classico" e' il default sopra,
+   quindi non ha bisogno di un blocco proprio: senza override le variabili
+   restano quelle di :root. */
+html[data-tema="notte"] {
+  color-scheme: dark;
+  --color-ink: #e9e4d8;
+  --color-felt: #2f6b54;
+  --color-felt-dim: #1c3f32;
+  --color-paper: #14201c;
+  --color-paper-soft: #1b2b25;
+  --color-card: #1f322b;
+  --color-amber: #e0a63e;
+  --color-amber-strong: #c98a24;
+  --color-coral: #e2604a;
+  --color-coral-soft: #3a1f1c;
+  --color-sage: #7fa08f;
+  --color-line: rgba(233, 228, 216, 0.14);
+}
+
+html[data-tema="mare"] {
+  --color-ink: #16232c;
+  --color-felt: #1d5b73;
+  --color-felt-dim: #143f52;
+  --color-paper: #eef3f2;
+  --color-paper-soft: #e2ebe9;
+  --color-card: #ffffff;
+  --color-amber: #d98c3f;
+  --color-amber-strong: #b96f27;
+  --color-coral: #c74b3a;
+  --color-coral-soft: #f4dedb;
+  --color-sage: #6f9a95;
+  --color-line: rgba(22, 35, 44, 0.12);
+}
+
+html[data-tema="rame"] {
+  --color-ink: #241c18;
+  --color-felt: #3a2f2a;
+  --color-felt-dim: #241c18;
+  --color-paper: #f7f3ee;
+  --color-paper-soft: #ece4da;
+  --color-card: #ffffff;
+  --color-amber: #c96b3f;
+  --color-amber-strong: #a8542c;
+  --color-coral: #b23b3b;
+  --color-coral-soft: #f0dcd6;
+  --color-sage: #8a8073;
+  --color-line: rgba(36, 28, 24, 0.12);
+}
+
+html[data-tema="pastello"] {
+  --color-ink: #3a3350;
+  --color-felt: #7c6bb0;
+  --color-felt-dim: #5f4f95;
+  --color-paper: #faf5fb;
+  --color-paper-soft: #f1e6f5;
+  --color-card: #ffffff;
+  --color-amber: #f2a65a;
+  --color-amber-strong: #d98639;
+  --color-coral: #e8637a;
+  --color-coral-soft: #fbdfe4;
+  --color-sage: #8fb9a8;
+  --color-line: rgba(58, 51, 80, 0.12);
+}
+
 @theme inline {
   --color-ink: var(--color-ink);
   --color-felt: var(--color-felt);
