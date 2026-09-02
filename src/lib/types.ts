@@ -148,4 +148,14 @@ export interface TerminBgg {
   tipo: TipoTermineBgg;
   nomeInglese: string;
   nomeItaliano: string;
+  // Breve descrizione mostrata al hover/click sul chip categoria/meccanica
+  // nel catalogo e nel dettaglio gioco. Compilata a mano dagli admin (BGG
+  // non la espone via API): assente finche' nessuno la scrive.
+  descrizione?: string;
+  // true se nomeItaliano e' solo un segnaposto in inglese, salvato mentre la
+  // traduzione DeepL era spenta (vedi ENABLE_DEEPL_TRANSLATION): la prossima
+  // sync con la traduzione attiva lo ritraduce sul serio invece di
+  // considerarlo gia' tradotto. Una correzione manuale in /admin/traduzioni
+  // lo azzera, perche' conta come traduzione vera.
+  daRitradurre?: boolean;
 }

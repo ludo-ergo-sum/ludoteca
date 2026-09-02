@@ -10,8 +10,10 @@ export async function aggiornaTraduzioneTermineAction(formData: FormData) {
   const tipo = String(formData.get("tipo")) as TipoTermineBgg;
   const nomeInglese = String(formData.get("nomeInglese"));
   const nomeItaliano = String(formData.get("nomeItaliano"));
+  const descrizioneGrezza = formData.get("descrizione");
+  const descrizione = descrizioneGrezza ? String(descrizioneGrezza).trim().slice(0, 300) : undefined;
 
-  await aggiornaTraduzioneTermine(tipo, nomeInglese, nomeItaliano);
+  await aggiornaTraduzioneTermine(tipo, nomeInglese, nomeItaliano, descrizione);
 
   revalidatePath("/admin/traduzioni");
   revalidatePath("/");

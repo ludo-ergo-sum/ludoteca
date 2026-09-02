@@ -3,7 +3,7 @@ import { recuperaCollezioneBgg, recuperaDettagliBgg } from "@/lib/bgg";
 import { traduciTesti, traduzioneAttiva } from "@/lib/deepl";
 import { getGiocoByBggId, sincronizzaGiocoDaBgg, type DatiGiocoBgg } from "@/lib/data/games";
 import { creaCopia } from "@/lib/data/copies";
-import { getTraduzioneTermine, salvaTraduzioneTermine } from "@/lib/data/terminiBgg";
+import { getTermine, salvaTraduzioneTermine } from "@/lib/data/terminiBgg";
 import type { TipoTermineBgg } from "@/lib/types";
 
 export type ModalitaSyncBgg = "totale" | "parziale";
@@ -46,9 +46,12 @@ async function traduciTassonomie(dettagli: DatiGiocoBgg[]): Promise<{ nuoviTermi
   const daTradurre: { tipo: TipoTermineBgg; nomeInglese: string; chiave: string }[] = [];
 
   for (const [chiave, voce] of distinti) {
-    const cache = await getTraduzioneTermine(voce.tipo, voce.nomeInglese);
-    if (cache) {
-      mappa.set(chiave, cache);
+    const termine = await getTermine(voce.tipo, voce.nomeInglese);
+    // Un termine salvato come segnaposto in inglese (daRitradurre) va
+    // ritradotto sul serio alla prima sync con DeepL di nuovo attivo,
+    // invece di essere trattato come gia' tradotto.
+    if (termine && !(termine.daRitradurre && traduzioneAttiva())) {
+      mappa.set(chiave, termine.nomeItaliano);
     } else {
       daTradurre.push({ ...voce, chiave });
     }
@@ -57,15 +60,16 @@ async function traduciTassonomie(dettagli: DatiGiocoBgg[]): Promise<{ nuoviTermi
   if (daTradurre.length > 0) {
     const tradotti = await traduciTesti(daTradurre.map((v) => v.nomeInglese));
     // Se la traduzione e' disattivata (vedi ENABLE_DEEPL_TRANSLATION),
-    // traduciTesti ritorna il testo inglese invariato: non lo si salva in
-    // anagrafica come se fosse la traduzione definitiva, altrimenti
-    // resterebbe in inglese per sempre anche a traduzione riattivata.
-    const daMemorizzare = traduzioneAttiva();
+    // traduciTesti ritorna il testo inglese invariato: si salva comunque,
+    // ma marcato daRitradurre, cosi' un admin puo' gia' scriverci una
+    // descrizione e il termine viene ritradotto sul serio quando DeepL
+    // torna attivo (non resta bloccato in inglese per sempre).
+    const daRitradurre = !traduzioneAttiva();
     for (let i = 0; i < daTradurre.length; i++) {
       const { tipo, nomeInglese, chiave } = daTradurre[i];
       const nomeItaliano = tradotti[i];
       mappa.set(chiave, nomeItaliano);
-      if (daMemorizzare) await salvaTraduzioneTermine(tipo, nomeInglese, nomeItaliano);
+      await salvaTraduzioneTermine(tipo, nomeInglese, nomeItaliano, daRitradurre);
     }
   }
 

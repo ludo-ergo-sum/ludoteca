@@ -19,19 +19,24 @@ import { generaQrCodeSvg } from "@/lib/qrcode";
 import { getMediaVotiGioco, getRecensioneUtente } from "@/lib/data/recensioni";
 import { getRecensioniConAutoreByGioco } from "@/lib/data/enriched";
 import { getNumeroPreferitiGioco, isPreferito } from "@/lib/data/preferiti";
+import { getDescrizioniByTipo } from "@/lib/data/terminiBgg";
+import { ChipConDescrizione } from "@/components/ChipConDescrizione";
 
 export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">) {
   const { slug } = await params;
   const gioco = await getGiocoBySlug(slug);
   if (!gioco) notFound();
 
-  const [copie, utente, recensioni, mediaVoti, numeroPreferiti] = await Promise.all([
-    getCopieByGioco(gioco.id),
-    getUtenteCorrente(),
-    getRecensioniConAutoreByGioco(gioco.id),
-    getMediaVotiGioco(gioco.id),
-    getNumeroPreferitiGioco(gioco.id),
-  ]);
+  const [copie, utente, recensioni, mediaVoti, numeroPreferiti, descrizioniCategorie, descrizioniMeccaniche] =
+    await Promise.all([
+      getCopieByGioco(gioco.id),
+      getUtenteCorrente(),
+      getRecensioniConAutoreByGioco(gioco.id),
+      getMediaVotiGioco(gioco.id),
+      getNumeroPreferitiGioco(gioco.id),
+      getDescrizioniByTipo("categoria"),
+      getDescrizioniByTipo("meccanica"),
+    ]);
   const [recensioneUtente, preferito] = utente
     ? await Promise.all([getRecensioneUtente(utente.id, gioco.id), isPreferito(utente.id, gioco.id)])
     : [null, false];
@@ -160,9 +165,12 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
             <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Categorie</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {gioco.categorie.map((c) => (
-                <span key={c} className="rounded-full bg-felt/8 px-2.5 py-1 text-xs font-medium text-felt">
-                  {c}
-                </span>
+                <ChipConDescrizione
+                  key={c}
+                  etichetta={c}
+                  descrizione={descrizioniCategorie.get(c.toLowerCase())}
+                  className="rounded-full bg-felt/8 px-2.5 py-1 text-xs font-medium text-felt"
+                />
               ))}
             </div>
           </div>
@@ -172,9 +180,12 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
               <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Meccaniche</p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {gioco.meccaniche.map((m) => (
-                  <span key={m} className="rounded-full border border-ink/15 px-2.5 py-1 text-xs font-medium text-ink/60">
-                    {m}
-                  </span>
+                  <ChipConDescrizione
+                    key={m}
+                    etichetta={m}
+                    descrizione={descrizioniMeccaniche.get(m.toLowerCase())}
+                    className="rounded-full border border-ink/15 px-2.5 py-1 text-xs font-medium text-ink/60"
+                  />
                 ))}
               </div>
             </div>
