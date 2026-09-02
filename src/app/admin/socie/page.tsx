@@ -1,6 +1,7 @@
 import { getSocie } from "@/lib/data/users";
 import { getUtenteCorrente } from "@/lib/session";
 import { BadgeSocioInRegola } from "@/components/StatusBadge";
+import { EliminaSocioButton } from "@/components/EliminaSocioButton";
 import { impostaQuotaAction, impostaRuoloAction } from "@/lib/actions/users";
 import { btnOutline, btnPrimary, inputBase, labelBase } from "@/lib/ui";
 
@@ -28,13 +29,16 @@ export default async function AdminSociePage() {
                 <p className="text-xs text-ink/50">{a.email}</p>
               </div>
               {a.id !== utenteCorrente?.id && (
-                <form action={impostaRuoloAction}>
-                  <input type="hidden" name="utenteId" value={a.id} />
-                  <input type="hidden" name="ruolo" value="socio" />
-                  <button type="submit" className={`${btnOutline} px-3.5 py-1.5 text-xs`}>
-                    Retrocedi a socio
-                  </button>
-                </form>
+                <div className="flex items-center gap-2">
+                  <form action={impostaRuoloAction}>
+                    <input type="hidden" name="utenteId" value={a.id} />
+                    <input type="hidden" name="ruolo" value="socio" />
+                    <button type="submit" className={`${btnOutline} px-3.5 py-1.5 text-xs`}>
+                      Retrocedi a socio
+                    </button>
+                  </form>
+                  <EliminaSocioButton utenteId={a.id} nome={a.nome} />
+                </div>
               )}
             </div>
           ))}
@@ -63,6 +67,7 @@ export default async function AdminSociePage() {
                       Promuovi ad admin
                     </button>
                   </form>
+                  <EliminaSocioButton utenteId={socio.id} nome={socio.nome} />
                 </div>
               </div>
 

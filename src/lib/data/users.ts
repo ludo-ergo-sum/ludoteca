@@ -57,6 +57,27 @@ export async function impostaRuolo(utenteId: string, ruolo: Ruolo): Promise<Uten
   return utente;
 }
 
+// Elimina anche preferiti/recensioni/richieste d'acquisto del socio (altrimenti
+// resterebbero orfani). Lo storico prestiti resta invece intatto (stesso
+// approccio di eliminaGioco in games.ts): la pagina admin/prestiti mostra
+// gia' un nome vuoto per un socio assente, senza errori. Il controllo "nessun
+// prestito attivo" e' responsabilita' del chiamante (vedi eliminaSocioAction).
+export async function eliminaSocio(utenteId: string): Promise<boolean> {
+  const indice = store.utenti.findIndex((u) => u.id === utenteId);
+  if (indice === -1) return false;
+  store.utenti.splice(indice, 1);
+  for (let i = store.preferiti.length - 1; i >= 0; i--) {
+    if (store.preferiti[i].utenteId === utenteId) store.preferiti.splice(i, 1);
+  }
+  for (let i = store.recensioni.length - 1; i >= 0; i--) {
+    if (store.recensioni[i].utenteId === utenteId) store.recensioni.splice(i, 1);
+  }
+  for (let i = store.richiesteAcquisto.length - 1; i >= 0; i--) {
+    if (store.richiesteAcquisto[i].utenteId === utenteId) store.richiesteAcquisto.splice(i, 1);
+  }
+  return true;
+}
+
 export async function impostaQuotaAnnuale(
   utenteId: string,
   anno: number,

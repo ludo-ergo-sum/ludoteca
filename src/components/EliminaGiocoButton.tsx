@@ -21,7 +21,7 @@ export function EliminaGiocoButton({ giocoId, titolo }: { giocoId: string; titol
       <button
         type="submit"
         aria-label={`Elimina ${titolo}`}
-        className="rounded-full p-2 text-ink/40 transition hover:bg-coral-soft hover:text-coral"
+        className="rounded-full p-2 text-coral transition hover:bg-coral-soft"
       >
         <Trash2 size={16} />
       </button>
