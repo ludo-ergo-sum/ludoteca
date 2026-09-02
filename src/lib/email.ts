@@ -45,6 +45,22 @@ export async function inviaEmailNuovaRichiesta(
   });
 }
 
+export async function inviaEmailNuovaRichiestaAcquisto(
+  adminEmails: string[],
+  dati: { giocoBaseTitolo: string; espansioneTitolo: string; socioNome: string; messaggio?: string | null }
+): Promise<void> {
+  if (adminEmails.length === 0) return;
+  await inviaEmail({
+    to: adminEmails,
+    subject: `Richiesta d'acquisto: ${dati.espansioneTitolo}`,
+    html: `
+      <p>${dati.socioNome} ha segnalato <strong>${dati.espansioneTitolo}</strong> (espansione di ${dati.giocoBaseTitolo}) come non presente in catalogo.</p>
+      ${dati.messaggio ? `<p>Messaggio: ${dati.messaggio}</p>` : ""}
+      <p>Vai su /admin/richieste-acquisto per gestire la richiesta.</p>
+    `,
+  });
+}
+
 export async function inviaEmailDecisionePrestito(
   utente: { email: string; nome: string },
   dati: { giocoTitolo: string; approvato: boolean; note?: string }

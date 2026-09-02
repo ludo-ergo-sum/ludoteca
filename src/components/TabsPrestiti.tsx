@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CalendarClock, Search, Ticket } from "lucide-react";
 import type { PrestitoConDettagli } from "@/lib/data/enriched";
@@ -14,9 +15,11 @@ const PER_PAGINA = 5;
 export function TabsPrestiti({
   attivi,
   storico,
+  giochiRecensiti,
 }: {
   attivi: PrestitoConDettagli[];
   storico: PrestitoConDettagli[];
+  giochiRecensiti: string[];
 }) {
   const [tab, setTab] = useState<"attivi" | "storico">("attivi");
 
@@ -180,7 +183,19 @@ export function TabsPrestiti({
                       {prestito.dataRestituzioneEffettiva && ` · restituito il ${prestito.dataRestituzioneEffettiva}`}
                     </p>
                   </div>
-                  <BadgeStatoPrestito stato={prestito.stato} />
+                  <div className="flex items-center gap-3">
+                    {prestito.stato === "restituito" &&
+                      prestito.gioco &&
+                      !giochiRecensiti.includes(prestito.gioco.id) && (
+                        <Link
+                          href={`/giochi/${prestito.gioco.slug}#recensione`}
+                          className="text-xs font-medium text-felt underline hover:no-underline"
+                        >
+                          Vota questo gioco
+                        </Link>
+                      )}
+                    <BadgeStatoPrestito stato={prestito.stato} />
+                  </div>
                 </div>
               ))}
               {storicoVisibile.length === 0 && (

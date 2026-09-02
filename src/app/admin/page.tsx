@@ -1,18 +1,21 @@
 import Link from "next/link";
-import { Dices, PauseCircle, Stamp, Tag, UserX } from "lucide-react";
+import { Dices, PauseCircle, ShoppingCart, Stamp, Tag, UserX } from "lucide-react";
 import { getGiochi } from "@/lib/data/games";
 import { getCopieSenzaEtichetta, getTutteLeCopie } from "@/lib/data/copies";
 import { getPrestitiInAttesa } from "@/lib/data/loans";
+import { getRichiesteAcquisto } from "@/lib/data/richiesteAcquisto";
 import { getSocie, socioInRegolaPerAnno } from "@/lib/data/users";
 
 export default async function AdminDashboard() {
-  const [giochi, copie, copieSenzaEtichetta, inAttesa, socie] = await Promise.all([
+  const [giochi, copie, copieSenzaEtichetta, inAttesa, richiesteAcquisto, socie] = await Promise.all([
     getGiochi(),
     getTutteLeCopie(),
     getCopieSenzaEtichetta(),
     getPrestitiInAttesa(),
+    getRichiesteAcquisto(),
     getSocie(),
   ]);
+  const richiesteNuove = richiesteAcquisto.filter((r) => r.stato === "nuova");
   const annoCorrente = new Date().getFullYear();
   const offline = copie.filter((c) => c.stato === "offline");
   const nonInRegola = socie.filter((s) => s.ruolo === "socio" && !socioInRegolaPerAnno(s, annoCorrente));
@@ -45,6 +48,13 @@ export default async function AdminDashboard() {
       titolo: "Etichette da stampare",
       valore: copieSenzaEtichetta.length,
       nota: "copie senza etichetta",
+    },
+    {
+      href: "/admin/richieste-acquisto",
+      icona: ShoppingCart,
+      titolo: "Richieste d'acquisto",
+      valore: richiesteNuove.length,
+      nota: "da valutare",
     },
     {
       href: "/admin/socie",

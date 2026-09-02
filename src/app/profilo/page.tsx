@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUtenteCorrente } from "@/lib/session";
-import { getPrestitiUtenteConDettagli } from "@/lib/data/enriched";
+import { getGiochiPreferitiByUtente, getPrestitiUtenteConDettagli } from "@/lib/data/enriched";
+import { getRecensioniByUtente } from "@/lib/data/recensioni";
 import { BadgeSocioInRegola } from "@/components/StatusBadge";
 import { StoricoQuote } from "@/components/StoricoQuote";
 import { TabsPrestiti } from "@/components/TabsPrestiti";
@@ -9,9 +11,14 @@ export default async function ProfiloPage() {
   const utente = await getUtenteCorrente();
   if (!utente) redirect("/login?callbackUrl=/profilo");
 
-  const prestiti = await getPrestitiUtenteConDettagli(utente.id);
+  const [prestiti, preferiti, recensioni] = await Promise.all([
+    getPrestitiUtenteConDettagli(utente.id),
+    getGiochiPreferitiByUtente(utente.id),
+    getRecensioniByUtente(utente.id),
+  ]);
   const attivi = prestiti.filter((p) => p.stato === "in_attesa" || p.stato === "approvato" || p.stato === "in_corso");
   const storico = prestiti.filter((p) => !attivi.includes(p));
+  const giochiRecensiti = recensioni.map((r) => r.giocoId);
   const annoCorrente = new Date().getFullYear();
   const quotaCorrente = utente.quote.find((q) => q.anno === annoCorrente);
 
@@ -46,7 +53,24 @@ export default async function ProfiloPage() {
         )}
       </section>
 
-      <TabsPrestiti attivi={attivi} storico={storico} />
+      {preferiti.length > 0 && (
+        <section className="paper-card mt-7 rounded-2xl p-6">
+          <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Giochi preferiti</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {preferiti.map(({ gioco }) => (
+              <Link
+                key={gioco.id}
+                href={`/giochi/${gioco.slug}`}
+                className="rounded-full border border-ink/15 px-3 py-1.5 text-sm text-ink transition hover:border-felt hover:text-felt"
+              >
+                {gioco.titolo}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <TabsPrestiti attivi={attivi} storico={storico} giochiRecensiti={giochiRecensiti} />
     </div>
   );
 }

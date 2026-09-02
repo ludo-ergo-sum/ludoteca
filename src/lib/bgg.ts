@@ -87,6 +87,14 @@ function linkOpzionali(links: unknown[], tipo: string): string[] | undefined {
   return valori.length > 0 ? valori : undefined;
 }
 
+// Le espansioni servono anche per il link alla scheda BGG, non solo per il
+// nome: a differenza di tuttiLink/linkOpzionali qui si tiene anche @_id.
+function linkConId(links: unknown[], tipo: string): { bggId: number; titolo: string }[] {
+  return (links as Array<Record<string, string>>)
+    .filter((l) => l["@_type"] === tipo)
+    .map((l) => ({ bggId: Number(l["@_id"]), titolo: decodificaTesto(l["@_value"]) }));
+}
+
 function difficoltaDaPeso(peso: number): 1 | 2 | 3 | 4 | 5 {
   if (!peso || Number.isNaN(peso)) return 3;
   const arrotondato = Math.round(peso);
@@ -126,6 +134,9 @@ export async function recuperaDettagliBgg(ids: number[]): Promise<DatiGiocoBgg[]
       const categorie = tuttiLink(links, "boardgamecategory");
       const meccaniche = tuttiLink(links, "boardgamemechanic");
       const peso = Number(item?.statistics?.ratings?.averageweight?.["@_value"] ?? 0);
+      const media = Number(item?.statistics?.ratings?.average?.["@_value"] ?? 0);
+      const numeroVoti = Number(item?.statistics?.ratings?.usersrated?.["@_value"] ?? 0);
+      const espansioni = linkConId(links, "boardgameexpansion");
 
       risultati.push({
         bggId: Number(item["@_id"]),
@@ -145,6 +156,9 @@ export async function recuperaDettagliBgg(ids: number[]): Promise<DatiGiocoBgg[]
         illustratori: linkOpzionali(links, "boardgameartist"),
         anno: item?.yearpublished?.["@_value"] ? Number(item.yearpublished["@_value"]) : undefined,
         difficolta: difficoltaDaPeso(peso),
+        bggValutazioneMedia: media > 0 ? media : undefined,
+        bggNumeroVoti: numeroVoti > 0 ? numeroVoti : undefined,
+        espansioni: espansioni.length > 0 ? espansioni : undefined,
       });
     }
 

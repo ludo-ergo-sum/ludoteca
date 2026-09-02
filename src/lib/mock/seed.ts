@@ -1,4 +1,13 @@
-import type { Copia, Gioco, Prestito, TerminBgg, Utente } from "@/lib/types";
+import type {
+  Copia,
+  Gioco,
+  Preferito,
+  Prestito,
+  Recensione,
+  RichiestaAcquisto,
+  TerminBgg,
+  Utente,
+} from "@/lib/types";
 
 // Dati di partenza per la fase di mock. Quando subentrera' MongoDB questo
 // file verra' rimosso e le stesse forme arriveranno dalle collection reali.
@@ -98,6 +107,11 @@ export const giochiSeed: Gioco[] = [
 
 // Vuota all'avvio: si popola durante la sync BGG (vedi src/lib/data/terminiBgg.ts).
 export const terminiBggSeed: TerminBgg[] = [];
+
+// Vuoti all'avvio: si popolano quando le socie votano/aggiungono preferiti.
+export const recensioniSeed: Recensione[] = [];
+export const preferitiSeed: Preferito[] = [];
+export const richiesteAcquistoSeed: RichiestaAcquisto[] = [];
 
 export const copieSeed: Copia[] = [
   { id: "c1", giocoId: "g1", codice: "CAT-01", stato: "disponibile", noteAdmin: null, dataAcquisizione: "2023-03-01" },

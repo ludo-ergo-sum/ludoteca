@@ -5,6 +5,7 @@ const tabs = [
   { href: "/admin/giochi", label: "Giochi e copie" },
   { href: "/admin/traduzioni", label: "Traduzioni" },
   { href: "/admin/prestiti", label: "Prestiti" },
+  { href: "/admin/richieste-acquisto", label: "Richieste d'acquisto" },
   { href: "/admin/socie", label: "Socie e quote" },
 ];
 

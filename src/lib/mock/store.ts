@@ -1,5 +1,23 @@
-import type { Copia, Gioco, Prestito, TerminBgg, Utente } from "@/lib/types";
-import { copieSeed, giochiSeed, prestitiSeed, terminiBggSeed, utentiSeed } from "@/lib/mock/seed";
+import type {
+  Copia,
+  Gioco,
+  Preferito,
+  Prestito,
+  Recensione,
+  RichiestaAcquisto,
+  TerminBgg,
+  Utente,
+} from "@/lib/types";
+import {
+  copieSeed,
+  giochiSeed,
+  preferitiSeed,
+  prestitiSeed,
+  recensioniSeed,
+  richiesteAcquistoSeed,
+  terminiBggSeed,
+  utentiSeed,
+} from "@/lib/mock/seed";
 
 // Store in memoria che simula il database durante la fase di mock.
 // Agganciato a globalThis per sopravvivere al hot-reload di Next.js in
@@ -13,6 +31,9 @@ interface MockStore {
   utenti: Utente[];
   prestiti: Prestito[];
   terminiBgg: TerminBgg[];
+  recensioni: Recensione[];
+  preferiti: Preferito[];
+  richiesteAcquisto: RichiestaAcquisto[];
 }
 
 const globalForStore = globalThis as unknown as { __lesMockStore?: MockStore };
@@ -24,6 +45,9 @@ function creaStore(): MockStore {
     utenti: structuredClone(utentiSeed),
     prestiti: structuredClone(prestitiSeed),
     terminiBgg: structuredClone(terminiBggSeed),
+    recensioni: structuredClone(recensioniSeed),
+    preferiti: structuredClone(preferitiSeed),
+    richiesteAcquisto: structuredClone(richiesteAcquistoSeed),
   };
 }
 
@@ -46,4 +70,16 @@ let contatoreGiochi = store.giochi.length;
 export function prossimoIdGioco(): string {
   contatoreGiochi += 1;
   return `g${contatoreGiochi}`;
+}
+
+let contatoreRecensioni = store.recensioni.length;
+export function prossimoIdRecensione(): string {
+  contatoreRecensioni += 1;
+  return `r${contatoreRecensioni}`;
+}
+
+let contatoreRichiesteAcquisto = store.richiesteAcquisto.length;
+export function prossimoIdRichiestaAcquisto(): string {
+  contatoreRichiesteAcquisto += 1;
+  return `ra${contatoreRichiesteAcquisto}`;
 }

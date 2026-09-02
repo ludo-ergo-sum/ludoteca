@@ -64,6 +64,13 @@ export interface Gioco {
   // ISO date, impostata solo alla creazione (mai aggiornata dai sync
   // successivi): quando il gioco e' stato importato da BGG per la prima volta.
   dataImportazioneBgg?: string | null;
+  // Valutazione media e numero di voti su BGG: sempre da sync, mai
+  // editabili a mano (come bggId), sovrascritti a ogni sync successivo.
+  bggValutazioneMedia?: number | null;
+  bggNumeroVoti?: number | null;
+  // Espansioni collegate su BGG: solo link verso la scheda BGG, non
+  // importate come giochi propri nel catalogo.
+  espansioni?: { bggId: number; titolo: string }[];
 }
 
 export interface Copia {
@@ -99,6 +106,36 @@ export interface Prestito {
 export interface GiocoConDisponibilita extends Gioco {
   copieTotali: number;
   copieDisponibili: number;
+}
+
+export interface Recensione {
+  id: string;
+  giocoId: string;
+  utenteId: string;
+  voto: number; // 1-10
+  commento?: string | null;
+  data: string; // ISO date, ultima modifica
+}
+
+export interface Preferito {
+  utenteId: string;
+  giocoId: string;
+  data: string; // ISO date di aggiunta
+}
+
+export type StatoRichiestaAcquisto = "nuova" | "gestita";
+
+// Nasce quando un socio segnala, dalla pagina di un gioco, un'espansione BGG
+// che non abbiamo ancora in catalogo.
+export interface RichiestaAcquisto {
+  id: string;
+  bggId: number; // id BGG dell'espansione suggerita
+  titolo: string; // titolo dell'espansione
+  giocoBaseId: string; // il gioco di cui e' espansione, per contesto admin
+  utenteId: string;
+  messaggio?: string | null;
+  data: string; // ISO date
+  stato: StatoRichiestaAcquisto;
 }
 
 export type TipoTermineBgg = "categoria" | "meccanica";

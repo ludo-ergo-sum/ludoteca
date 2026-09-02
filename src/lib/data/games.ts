@@ -136,6 +136,9 @@ export interface DatiGiocoBgg {
   meccaniche?: string[];
   anno?: number;
   difficolta: 1 | 2 | 3 | 4 | 5;
+  bggValutazioneMedia?: number;
+  bggNumeroVoti?: number;
+  espansioni?: { bggId: number; titolo: string }[];
 }
 
 // Sync one-way dal catalogo master su BoardGameGeek: se esiste gia' un gioco

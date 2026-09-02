@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Baby, Clock, Sparkles, Users } from "lucide-react";
-import { getGiocoBySlug } from "@/lib/data/games";
+import { ArrowLeft, CheckCircle2, Heart, ShoppingCart } from "lucide-react";
+import { getGiocoByBggId, getGiocoBySlug } from "@/lib/data/games";
 import { getCopieByGioco } from "@/lib/data/copies";
 import { getPrestitiByUtente } from "@/lib/data/loans";
 import { getUtenteCorrente } from "@/lib/session";
@@ -9,58 +9,38 @@ import { socioInRegolaPerAnno } from "@/lib/data/users";
 import { copertinaPerGioco } from "@/lib/palette";
 import { BadgeStatoCopia } from "@/components/StatusBadge";
 import { QrCodeCopia } from "@/components/QrCodeCopia";
+import { HeroGioco } from "@/components/HeroGioco";
+import { ModaleRichiestaEspansione } from "@/components/ModaleRichiestaEspansione";
 import { richiediPrestitoAction } from "@/lib/actions/loans";
-import { btnAmber, btnOutline } from "@/lib/ui";
-import { formattaIntervallo } from "@/lib/format";
+import { salvaRecensioneAction } from "@/lib/actions/recensioni";
+import { toggleFavoritoAction } from "@/lib/actions/preferiti";
+import { btnAmber, btnOutline, inputBase, labelBase } from "@/lib/ui";
 import { generaQrCodeSvg } from "@/lib/qrcode";
-
-const MOSTRATI = 2;
-
-function tronca(valori: string[]): { visibili: string[]; restanti: number } {
-  return { visibili: valori.slice(0, MOSTRATI), restanti: Math.max(0, valori.length - MOSTRATI) };
-}
-
-// Elenchi come autore/editore/illustratori possono avere molti valori (BGG
-// elenca ogni editore regionale): si mostrano solo i primi 2, il resto e' un
-// link che scorre alla sezione "Dettagli completi" in fondo alla pagina.
-function ListaConLink({ valori, ancora }: { valori: string[]; ancora: string }) {
-  const { visibili, restanti } = tronca(valori);
-  return (
-    <>
-      {visibili.join(", ")}
-      {restanti > 0 && (
-        <>
-          {" "}e <a href={`#${ancora}`} className="underline hover:text-felt">altri {restanti}</a>
-        </>
-      )}
-    </>
-  );
-}
-
-function ChipConLink({ valori, ancora, className }: { valori: string[]; ancora: string; className: string }) {
-  const { visibili, restanti } = tronca(valori);
-  return (
-    <>
-      {visibili.map((v) => (
-        <span key={v} className={className}>
-          {v}
-        </span>
-      ))}
-      {restanti > 0 && (
-        <a href={`#${ancora}`} className={`${className} hover:underline`}>
-          +{restanti}
-        </a>
-      )}
-    </>
-  );
-}
+import { getMediaVotiGioco, getRecensioneUtente } from "@/lib/data/recensioni";
+import { getRecensioniConAutoreByGioco } from "@/lib/data/enriched";
+import { getNumeroPreferitiGioco, isPreferito } from "@/lib/data/preferiti";
 
 export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">) {
   const { slug } = await params;
   const gioco = await getGiocoBySlug(slug);
   if (!gioco) notFound();
 
-  const [copie, utente] = await Promise.all([getCopieByGioco(gioco.id), getUtenteCorrente()]);
+  const [copie, utente, recensioni, mediaVoti, numeroPreferiti] = await Promise.all([
+    getCopieByGioco(gioco.id),
+    getUtenteCorrente(),
+    getRecensioniConAutoreByGioco(gioco.id),
+    getMediaVotiGioco(gioco.id),
+    getNumeroPreferitiGioco(gioco.id),
+  ]);
+  const [recensioneUtente, preferito] = utente
+    ? await Promise.all([getRecensioneUtente(utente.id, gioco.id), isPreferito(utente.id, gioco.id)])
+    : [null, false];
+  const espansioniConMatch = await Promise.all(
+    (gioco.espansioni ?? []).map(async (espansione) => ({
+      ...espansione,
+      trovata: await getGiocoByBggId(espansione.bggId),
+    }))
+  );
   const copertina = copertinaPerGioco(gioco.id);
   const primaDisponibile = copie.find((c) => c.stato === "disponibile");
 
@@ -71,11 +51,11 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
   const annoCorrente = new Date().getFullYear();
   const inRegola = utente ? socioInRegolaPerAnno(utente, annoCorrente) : false;
 
-  // Il QR si mostra solo per le copie disponibili (chiunque loggato puo'
-  // prenotarle) o per quelle attualmente in prestito al socio loggato
-  // stesso (per gestirle/restituirle) — il controllo e' server-side, non si
-  // basa su cosa il client mostra o nasconde.
-  const copieConQr = utente
+  // La card "Copie in ludoteca" (stato + QR di ogni copia) e' riservata agli
+  // admin: le socie prenotano/restituiscono tramite il QR fisico sulla copia
+  // o il bottone "Prenota una copia" qui sopra, non serve piu' vederle tutte.
+  const isAdmin = utente?.ruolo === "admin";
+  const copieConQr = isAdmin
     ? await Promise.all(
         copie.map(async (copia) => {
           const eDelSocioLoggato = prestitiUtente.some(
@@ -87,41 +67,31 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
       )
     : [];
 
-  const sezioniComplete = [
-    { id: "dettagli-categorie", etichetta: "Categorie", valori: gioco.categorie },
-    { id: "dettagli-meccaniche", etichetta: "Meccaniche", valori: gioco.meccaniche ?? [] },
-    { id: "dettagli-autore", etichetta: "Autori", valori: gioco.autore ?? [] },
-    { id: "dettagli-editore", etichetta: "Editori", valori: gioco.editore ?? [] },
-    { id: "dettagli-illustratori", etichetta: "Illustratori", valori: gioco.illustratori ?? [] },
-  ].filter((s) => s.valori.length > MOSTRATI);
-
   const esaurito = gioco.copieDisponibili === 0;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-ink/60 hover:text-felt">
-        <ArrowLeft size={15} /> Catalogo
-      </Link>
-
-      <div className="mt-5 flex flex-wrap gap-1.5">
-        <ChipConLink
-          valori={gioco.categorie}
-          ancora="dettagli-categorie"
-          className="rounded-full bg-felt/8 px-2.5 py-1 text-xs font-medium text-felt"
-        />
-        {gioco.meccaniche && (
-          <ChipConLink
-            valori={gioco.meccaniche}
-            ancora="dettagli-meccaniche"
-            className="rounded-full border border-ink/15 px-2.5 py-1 text-xs font-medium text-ink/60"
-          />
+      <div className="flex items-center justify-between gap-3">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-ink/60 hover:text-felt">
+          <ArrowLeft size={15} /> Catalogo
+        </Link>
+        {utente && (
+          <form action={toggleFavoritoAction}>
+            <input type="hidden" name="giocoId" value={gioco.id} />
+            <button
+              type="submit"
+              aria-label={preferito ? "Rimuovi dai preferiti" : "Aggiungi ai preferiti"}
+              className="flex-none rounded-full p-2 transition hover:bg-coral-soft"
+            >
+              <Heart size={18} className={preferito ? "fill-coral text-coral" : "text-ink/30"} />
+            </button>
+          </form>
         )}
       </div>
-      <h1 className="mt-2 font-display text-3xl font-semibold text-ink sm:text-4xl">{gioco.titolo}</h1>
 
       {/* Disponibilita' in cima, come un timbro sul biglietto: niente box invadente,
           solo un rigo tra due linee tratteggiate — coerente con lo stile "scontrino". */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-y border-dashed border-ink/15 py-3">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-dashed border-ink/15 py-3">
         <p className="inline-flex items-center gap-2 text-sm text-ink/70">
           <span className={`h-2 w-2 rounded-full ${esaurito ? "bg-coral" : "bg-felt"}`} aria-hidden />
           <span className="font-display text-base text-ink">{esaurito ? "Non disponibile" : "Prenotabile"}</span>
@@ -163,116 +133,163 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
       </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.3fr_0.9fr]">
-        <div>
-          <div
-            className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl"
-            style={{ backgroundColor: copertina.bg }}
-          >
-            {gioco.immagine ? (
-              // eslint-disable-next-line @next/next/no-img-element -- URL esterna (BGG), niente next/image config per un solo campo remoto
-              <img src={gioco.immagine} alt={gioco.titolo} className="h-full w-full object-cover" />
-            ) : (
-              <span className="font-display text-8xl font-bold opacity-90" style={{ color: copertina.fg }}>
-                {gioco.titolo.charAt(0)}
-              </span>
-            )}
+        <HeroGioco
+          immagine={gioco.immagine}
+          titolo={gioco.titolo}
+          copertina={copertina}
+          giocatoriMin={gioco.giocatoriMin}
+          giocatoriMax={gioco.giocatoriMax}
+          durataMinutiMin={gioco.durataMinutiMin}
+          durataMinutiMax={gioco.durataMinutiMax}
+          etaMinima={gioco.etaMinima}
+          anno={gioco.anno}
+          difficolta={gioco.difficolta}
+          bggValutazioneMedia={gioco.bggValutazioneMedia}
+          bggNumeroVoti={gioco.bggNumeroVoti}
+          votoLes={mediaVoti?.media}
+          votoLesNumero={mediaVoti?.numero}
+          numeroPreferiti={numeroPreferiti}
+          descrizione={gioco.descrizione}
+          autore={gioco.autore}
+          editore={gioco.editore}
+          illustratori={gioco.illustratori}
+        />
+
+        <aside className="space-y-5">
+          <div className="paper-card rounded-2xl p-6">
+            <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Categorie</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {gioco.categorie.map((c) => (
+                <span key={c} className="rounded-full bg-felt/8 px-2.5 py-1 text-xs font-medium text-felt">
+                  {c}
+                </span>
+              ))}
+            </div>
           </div>
 
-          <p className="mt-6 text-[15px] leading-relaxed text-ink/75">{gioco.descrizione}</p>
-
-          {(gioco.autore || gioco.editore || gioco.anno) && (
-            <p className="mt-6 text-sm text-ink/50">
-              {gioco.autore && <ListaConLink valori={gioco.autore} ancora="dettagli-autore" />}
-              {gioco.autore && (gioco.editore || gioco.anno) && " · "}
-              {gioco.editore && <ListaConLink valori={gioco.editore} ancora="dettagli-editore" />}
-              {gioco.editore && gioco.anno && " · "}
-              {gioco.anno}
-            </p>
-          )}
-          {gioco.illustratori && (
-            <p className="mt-1 text-xs text-ink/40">
-              Illustrazioni: <ListaConLink valori={gioco.illustratori} ancora="dettagli-illustratori" />
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-5">
-          <div className="ticket-notch paper-card rounded-2xl p-6">
-            <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Scheda del gioco</p>
-            <dl className="mt-4 space-y-3">
-              <Proprieta icona={Users} etichetta="Giocatori" valore={formattaIntervallo(gioco.giocatoriMin, gioco.giocatoriMax)} />
-              <Proprieta
-                icona={Clock}
-                etichetta="Durata"
-                valore={`${formattaIntervallo(gioco.durataMinutiMin, gioco.durataMinutiMax)} min`}
-              />
-              <Proprieta icona={Baby} etichetta="Età minima" valore={`${gioco.etaMinima}+`} />
-              <Proprieta
-                ultima
-                icona={Sparkles}
-                etichetta="Difficoltà"
-                valore={"●".repeat(gioco.difficolta) + "○".repeat(5 - gioco.difficolta)}
-              />
-            </dl>
-          </div>
-
-          {utente && (
+          {gioco.meccaniche && gioco.meccaniche.length > 0 && (
             <div className="paper-card rounded-2xl p-6">
-              <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Copie in ludoteca</p>
+              <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Meccaniche</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {gioco.meccaniche.map((m) => (
+                  <span key={m} className="rounded-full border border-ink/15 px-2.5 py-1 text-xs font-medium text-ink/60">
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {espansioniConMatch.length > 0 && (
+            <div className="paper-card rounded-2xl p-6">
+              <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Espansioni</p>
               <ul className="mt-3 space-y-2">
-                {copieConQr.map(({ copia, qrSvg }) => (
-                  <li key={copia.id} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="font-mono-tag text-ink/70">{copia.codice}</span>
-                    <div className="flex items-center gap-2.5">
-                      <BadgeStatoCopia stato={copia.stato} />
-                      {qrSvg && <QrCodeCopia codice={copia.codice} qrSvg={qrSvg} />}
-                    </div>
+                {espansioniConMatch.map((espansione) => (
+                  <li key={espansione.bggId} className="flex items-center gap-1.5">
+                    {espansione.trovata ? (
+                      <>
+                        <CheckCircle2 size={14} className="flex-none text-felt" aria-label="In ludoteca" />
+                        <Link
+                          href={`/giochi/${espansione.trovata.slug}`}
+                          className="text-sm text-ink/70 underline hover:text-felt"
+                        >
+                          {espansione.titolo}
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart size={14} className="flex-none text-ink/40" aria-label="Non in ludoteca" />
+                        <ModaleRichiestaEspansione
+                          bggId={espansione.bggId}
+                          titolo={espansione.titolo}
+                          giocoBaseId={gioco.id}
+                          loggato={!!utente}
+                        />
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
             </div>
           )}
-        </div>
+        </aside>
       </div>
 
-      {sezioniComplete.length > 0 && (
-        <section className="mt-10 border-t border-ink/10 pt-6">
-          <h2 className="font-display text-lg font-semibold text-ink">Dettagli completi</h2>
-          <dl className="mt-4 space-y-3">
-            {sezioniComplete.map((s) => (
-              <div key={s.id} id={s.id}>
-                <dt className="text-xs font-medium uppercase tracking-wide text-ink/40">{s.etichetta}</dt>
-                <dd className="mt-1 text-sm text-ink/70">{s.valori.join(", ")}</dd>
-              </div>
+      {isAdmin && (
+        <div className="paper-card mt-8 rounded-2xl p-6">
+          <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Copie in ludoteca</p>
+          <ul className="mt-3 space-y-2">
+            {copieConQr.map(({ copia, qrSvg }) => (
+              <li key={copia.id} className="flex items-center justify-between gap-2 text-sm">
+                <span className="font-mono-tag text-ink/70">{copia.codice}</span>
+                <div className="flex items-center gap-2.5">
+                  <BadgeStatoCopia stato={copia.stato} />
+                  {qrSvg && <QrCodeCopia codice={copia.codice} qrSvg={qrSvg} />}
+                </div>
+              </li>
             ))}
-          </dl>
-        </section>
+          </ul>
+        </div>
       )}
-    </div>
-  );
-}
 
-function Proprieta({
-  icona: Icona,
-  etichetta,
-  valore,
-  ultima,
-}: {
-  icona: typeof Users;
-  etichetta: string;
-  valore: string;
-  ultima?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center justify-between gap-3 ${
-        ultima ? "" : "border-b border-dashed border-ink/15 pb-3"
-      }`}
-    >
-      <dt className="inline-flex items-center gap-1.5 text-sm text-ink/60">
-        <Icona size={15} /> {etichetta}
-      </dt>
-      <dd className="font-display text-lg text-ink">{valore}</dd>
+      <section id="recensione" className="mt-10 border-t border-ink/10 pt-6">
+        <h2 className="font-display text-lg font-semibold text-ink">Recensioni delle socie e dei soci</h2>
+
+        {utente && (
+          <form action={salvaRecensioneAction} className="paper-card mt-4 rounded-2xl p-5">
+            <input type="hidden" name="giocoId" value={gioco.id} />
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <label className={labelBase} htmlFor="voto">
+                  Il tuo voto
+                </label>
+                <select
+                  id="voto"
+                  name="voto"
+                  defaultValue={recensioneUtente?.voto ?? 8}
+                  className={`${inputBase} w-20`}
+                >
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-[220px] flex-1">
+                <label className={labelBase} htmlFor="commento">
+                  Commento (opzionale)
+                </label>
+                <textarea
+                  id="commento"
+                  name="commento"
+                  defaultValue={recensioneUtente?.commento ?? ""}
+                  rows={2}
+                  maxLength={500}
+                  className={inputBase}
+                />
+              </div>
+              <button type="submit" className={btnAmber}>
+                {recensioneUtente ? "Aggiorna voto" : "Vota questo gioco"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="mt-5 space-y-3">
+          {recensioni.length === 0 && <p className="text-sm text-ink/60">Nessuna recensione per ora.</p>}
+          {recensioni.map((recensione) => (
+            <div key={recensione.id} className="rounded-xl border border-ink/10 bg-card/60 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-ink">{recensione.autoreNome}</p>
+                <p className="font-display text-base text-ink">{recensione.voto}/10</p>
+              </div>
+              {recensione.commento && <p className="mt-1.5 text-sm text-ink/70">{recensione.commento}</p>}
+              <p className="mt-1 text-xs text-ink/40">{recensione.data}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
