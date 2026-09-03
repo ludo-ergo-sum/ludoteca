@@ -1,31 +1,10 @@
 import "server-only";
-import { store, prossimoIdRichiestaAcquisto } from "@/lib/mock/store";
-import type { RichiestaAcquisto } from "@/lib/types";
+import { DATA_MOCK } from "@/lib/mongo";
+import * as mock from "./richiesteAcquisto.mock";
+import * as mongo from "./richiesteAcquisto.mongo";
 
-export async function getRichiesteAcquisto(): Promise<RichiestaAcquisto[]> {
-  return [...store.richiesteAcquisto].sort((a, b) => b.data.localeCompare(a.data));
-}
+const impl = DATA_MOCK ? mock : mongo;
 
-export async function creaRichiestaAcquisto(dati: {
-  bggId: number;
-  titolo: string;
-  giocoBaseId: string;
-  utenteId: string;
-  messaggio?: string | null;
-}): Promise<RichiestaAcquisto> {
-  const richiesta: RichiestaAcquisto = {
-    id: prossimoIdRichiestaAcquisto(),
-    ...dati,
-    data: new Date().toISOString().slice(0, 10),
-    stato: "nuova",
-  };
-  store.richiesteAcquisto.push(richiesta);
-  return richiesta;
-}
-
-export async function segnaRichiestaGestita(id: string): Promise<RichiestaAcquisto | null> {
-  const richiesta = store.richiesteAcquisto.find((r) => r.id === id);
-  if (!richiesta) return null;
-  richiesta.stato = "gestita";
-  return richiesta;
-}
+export const getRichiesteAcquisto = impl.getRichiesteAcquisto;
+export const creaRichiestaAcquisto = impl.creaRichiestaAcquisto;
+export const segnaRichiestaGestita = impl.segnaRichiestaGestita;

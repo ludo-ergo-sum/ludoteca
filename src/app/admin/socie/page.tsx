@@ -8,7 +8,10 @@ import { btnOutline, btnPrimary, inputBase, labelBase } from "@/lib/ui";
 export default async function AdminSociePage() {
   const [tutti, utenteCorrente] = await Promise.all([getSocie(), getUtenteCorrente()]);
   const admin = tutti.filter((u) => u.ruolo === "admin");
-  const socie = tutti.filter((u) => u.ruolo === "socio");
+  // Un admin e' anche un socio: compare qui sotto pure lui, cosi' la sua
+  // quota si rinnova dal pannello come per chiunque altro, senza toccare il
+  // database a mano.
+  const socie = tutti;
   const annoCorrente = new Date().getFullYear();
 
   return (
