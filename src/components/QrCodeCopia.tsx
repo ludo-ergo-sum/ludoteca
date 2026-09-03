@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { QrCode } from "lucide-react";
+import { Printer, QrCode } from "lucide-react";
+import { btnOutline } from "@/lib/ui";
 
-export function QrCodeCopia({ codice, qrSvg }: { codice: string; qrSvg: string }) {
+export function QrCodeCopia({ codice, qrSvg, copiaId }: { codice: string; qrSvg: string; copiaId: string }) {
   const [aperto, setAperto] = useState(false);
 
   return (
@@ -37,10 +38,16 @@ export function QrCodeCopia({ codice, qrSvg }: { codice: string; qrSvg: string }
             <p className="mt-3 max-w-[14rem] text-xs text-ink/50">
               Scansiona per aprire questa copia dal telefono e prenotarla o gestirla.
             </p>
+            <form action="/api/admin/etichette" method="POST" className="mt-4">
+              <input type="hidden" name="copiaId" value={copiaId} />
+              <button type="submit" className={`${btnOutline} mx-auto`}>
+                <Printer size={14} /> Stampa etichetta
+              </button>
+            </form>
             <button
               type="button"
               onClick={() => setAperto(false)}
-              className="mt-4 text-xs text-ink/50 hover:text-felt hover:underline"
+              className="mt-3 text-xs text-ink/50 hover:text-felt hover:underline"
             >
               Chiudi
             </button>

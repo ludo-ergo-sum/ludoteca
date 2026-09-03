@@ -33,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="it"
       data-scroll-behavior="smooth"
       className={`${fraunces.variable} ${inter.variable} ${plexMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <script

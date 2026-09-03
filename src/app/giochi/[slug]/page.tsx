@@ -175,6 +175,23 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
             </div>
           </div>
 
+          {isAdmin && (
+            <div className="paper-card rounded-2xl p-6">
+              <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Copie in ludoteca</p>
+              <ul className="mt-3 space-y-2">
+                {copieConQr.map(({ copia, qrSvg }) => (
+                  <li key={copia.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="font-mono-tag text-ink/70">{copia.codice}</span>
+                    <div className="flex items-center gap-2.5">
+                      <BadgeStatoCopia stato={copia.stato} />
+                      {qrSvg && <QrCodeCopia codice={copia.codice} qrSvg={qrSvg} copiaId={copia.id} />}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {gioco.meccaniche && gioco.meccaniche.length > 0 && (
             <div className="paper-card rounded-2xl p-6">
               <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Meccaniche</p>
@@ -225,23 +242,6 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
           )}
         </aside>
       </div>
-
-      {isAdmin && (
-        <div className="paper-card mt-8 rounded-2xl p-6">
-          <p className="font-mono-tag text-[11px] uppercase tracking-widest text-ink/50">Copie in ludoteca</p>
-          <ul className="mt-3 space-y-2">
-            {copieConQr.map(({ copia, qrSvg }) => (
-              <li key={copia.id} className="flex items-center justify-between gap-2 text-sm">
-                <span className="font-mono-tag text-ink/70">{copia.codice}</span>
-                <div className="flex items-center gap-2.5">
-                  <BadgeStatoCopia stato={copia.stato} />
-                  {qrSvg && <QrCodeCopia codice={copia.codice} qrSvg={qrSvg} />}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <section id="recensione" className="mt-10 border-t border-ink/10 pt-6">
         <h2 className="font-display text-lg font-semibold text-ink">Recensioni delle socie e dei soci</h2>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { getGiocoById } from "@/lib/data/games";
 import { getCopieByGioco } from "@/lib/data/copies";
 import { getPrestitoAttivoPerCopia } from "@/lib/data/loans";
@@ -15,7 +15,7 @@ import { CampoImmagine } from "@/components/CampoImmagine";
 import { creaCopiaAction, mettiOfflineAction, rimettiOnlineAction } from "@/lib/actions/copies";
 import { registraRientroAction } from "@/lib/actions/loans";
 import { aggiornaGiocoAction } from "@/lib/actions/games";
-import { btnAmber, btnDanger, btnPrimary, inputBase, labelBase } from "@/lib/ui";
+import { btnAmber, btnDanger, btnOutline, btnPrimary, inputBase, labelBase } from "@/lib/ui";
 
 export default async function AdminGiocoPage({ params }: PageProps<"/admin/giochi/[id]">) {
   const { id } = await params;
@@ -289,6 +289,12 @@ async function CopiaAdminCard({ copia }: { copia: Copia }) {
             </button>
           </form>
         )}
+        <form action="/api/admin/etichette" method="POST">
+          <input type="hidden" name="copiaId" value={copia.id} />
+          <button type="submit" className={`${btnOutline} px-3.5 py-2 text-xs`}>
+            <Printer size={13} /> Stampa etichetta
+          </button>
+        </form>
         <NotaCopia copiaId={copia.id} nota={copia.noteAdmin} />
       </div>
     </div>
