@@ -11,6 +11,7 @@ import { BadgeStatoCopia } from "@/components/StatusBadge";
 import { QrCodeCopia } from "@/components/QrCodeCopia";
 import { HeroGioco } from "@/components/HeroGioco";
 import { ModaleRichiestaEspansione } from "@/components/ModaleRichiestaEspansione";
+import { BottoneInvio } from "@/components/BottoneInvio";
 import { richiediPrestitoAction } from "@/lib/actions/loans";
 import { salvaRecensioneAction } from "@/lib/actions/recensioni";
 import { toggleFavoritoAction } from "@/lib/actions/preferiti";
@@ -126,9 +127,7 @@ export default async function GiocoPage({ params }: PageProps<"/giochi/[slug]">)
         {utente && !richiestaAttiva && inRegola && primaDisponibile && (
           <form action={richiediPrestitoAction}>
             <input type="hidden" name="copiaId" value={primaDisponibile.id} />
-            <button type="submit" className={btnAmber}>
-              Prenota una copia
-            </button>
+            <BottoneInvio className={btnAmber}>Prenota una copia</BottoneInvio>
           </form>
         )}
 

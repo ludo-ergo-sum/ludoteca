@@ -1,7 +1,6 @@
 import { getTuttiITermini } from "@/lib/data/terminiBgg";
-import { aggiornaTraduzioneTermineAction } from "@/lib/actions/terminiBgg";
+import { FormTraduzioneTermine } from "@/components/FormTraduzioneTermine";
 import type { TerminBgg } from "@/lib/types";
-import { btnOutline, inputBase, labelBase } from "@/lib/ui";
 
 export default async function AdminTraduzioniPage() {
   const termini = await getTuttiITermini();
@@ -37,37 +36,7 @@ function SezioneTermini({ titolo, termini }: { titolo: string; termini: TerminBg
       <h2 className="font-display text-xl font-semibold text-ink">{titolo}</h2>
       <div className="mt-3 space-y-2">
         {termini.map((t) => (
-          <form
-            key={`${t.tipo}-${t.nomeInglese}`}
-            action={aggiornaTraduzioneTermineAction}
-            className="rounded-xl border border-ink/10 bg-card p-3"
-          >
-            <input type="hidden" name="tipo" value={t.tipo} />
-            <input type="hidden" name="nomeInglese" value={t.nomeInglese} />
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="w-full flex-none truncate text-xs text-ink/50 sm:w-44" title={t.nomeInglese}>
-                {t.nomeInglese}
-              </span>
-              <input name="nomeItaliano" defaultValue={t.nomeItaliano} className={`${inputBase} flex-1`} />
-              <button type="submit" className={`${btnOutline} px-3.5 py-1.5 text-xs`}>
-                Salva
-              </button>
-            </div>
-            <div className="mt-2 sm:pl-[188px]">
-              <label className={`${labelBase} sr-only`} htmlFor={`descrizione-${t.tipo}-${t.nomeInglese}`}>
-                Descrizione
-              </label>
-              <textarea
-                id={`descrizione-${t.tipo}-${t.nomeInglese}`}
-                name="descrizione"
-                defaultValue={t.descrizione ?? ""}
-                placeholder="Breve descrizione (opzionale, mostrata al hover/click)"
-                rows={1}
-                maxLength={300}
-                className={`${inputBase} w-full resize-y text-xs`}
-              />
-            </div>
-          </form>
+          <FormTraduzioneTermine key={`${t.tipo}-${t.nomeInglese}`} termine={t} />
         ))}
       </div>
     </section>

@@ -14,7 +14,7 @@ const TITOLI: Record<ChiaveEmail, string> = {
 
 const SEGNAPOSTO: Record<ChiaveEmail, string[]> = {
   benvenuto: ["nome"],
-  nuovaRichiesta: ["giocoTitolo", "socioNome"],
+  nuovaRichiesta: ["giocoTitolo", "socioNome", "linkDashboard"],
   decisionePrestito: ["nome", "giocoTitolo", "risultato", "esito", "nota"],
   promemoria: ["nome", "giocoTitolo", "dataScadenza"],
   nuovaRichiestaAcquisto: ["socioNome", "espansioneTitolo", "giocoBaseTitolo", "messaggio"],

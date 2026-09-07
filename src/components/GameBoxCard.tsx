@@ -53,10 +53,12 @@ export function GameBoxCard({ gioco }: { gioco: GiocoConDisponibilita }) {
         <p className="line-clamp-2 text-sm text-ink/70">{gioco.descrizione}</p>
 
         {gioco.meccaniche && gioco.meccaniche.length > 0 && (
-          <div className="group/info relative inline-flex w-fit items-center gap-1 text-xs text-ink/50">
-            <Info size={14} />
-            Meccaniche
-            <div className="absolute bottom-full left-0 z-20 mb-1.5 w-56 rounded-xl border border-ink/10 bg-card p-3 text-xs text-ink/70 opacity-0 shadow-lg transition-opacity duration-150 group-hover/info:opacity-100">
+          <div className="group/info relative inline-block self-start">
+            <span className="inline-flex cursor-default items-center gap-1 text-xs text-ink/50">
+              <Info size={14} />
+              Meccaniche
+            </span>
+            <div className="pointer-events-none absolute bottom-full left-0 z-20 mb-1.5 w-56 rounded-xl border border-ink/10 bg-card p-3 text-xs text-ink/70 opacity-0 shadow-lg transition-opacity duration-150 group-hover/info:opacity-100">
               <p className="mb-1.5 font-mono-tag text-[10px] uppercase tracking-widest text-ink/40">Meccaniche</p>
               <ul className="space-y-1">
                 {gioco.meccaniche.slice(0, 4).map((meccanica) => (

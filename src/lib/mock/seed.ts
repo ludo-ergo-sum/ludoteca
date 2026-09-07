@@ -134,7 +134,7 @@ export const templateEmailSeed: TemplateEmail[] = [
     chiave: "nuovaRichiesta",
     oggetto: "Nuova richiesta di prestito: {{giocoTitolo}}",
     corpo:
-      "{{socioNome}} ha richiesto in prestito {{giocoTitolo}}.\n\nVai su /admin/prestiti per approvare o rifiutare la richiesta.",
+      "{{socioNome}} ha richiesto in prestito {{giocoTitolo}}.\n\nVai alla dashboard per approvare o rifiutare la richiesta: {{linkDashboard}}",
   },
   {
     chiave: "decisionePrestito",

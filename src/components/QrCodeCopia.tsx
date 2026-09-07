@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Printer, QrCode } from "lucide-react";
 import { btnOutline } from "@/lib/ui";
 
-export function QrCodeCopia({ codice, qrSvg, copiaId }: { codice: string; qrSvg: string; copiaId: string }) {
+export function QrCodeCopia({
+  codice,
+  qrSvg,
+  copiaId,
+  children,
+}: {
+  codice: string;
+  qrSvg: string;
+  copiaId: string;
+  children?: ReactNode;
+}) {
   const [aperto, setAperto] = useState(false);
 
   return (
@@ -13,9 +23,9 @@ export function QrCodeCopia({ codice, qrSvg, copiaId }: { codice: string; qrSvg:
         type="button"
         onClick={() => setAperto(true)}
         aria-label={`Mostra il QR code della copia ${codice}`}
-        className="text-ink/40 transition hover:text-felt"
+        className={children ? "transition hover:opacity-80" : "text-ink/40 transition hover:text-felt"}
       >
-        <QrCode size={16} />
+        {children ?? <QrCode size={16} />}
       </button>
 
       {aperto && (

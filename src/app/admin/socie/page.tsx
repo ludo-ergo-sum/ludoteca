@@ -2,6 +2,7 @@ import { getSocie } from "@/lib/data/users";
 import { getUtenteCorrente } from "@/lib/session";
 import { BadgeSocioInRegola } from "@/components/StatusBadge";
 import { EliminaSocioButton } from "@/components/EliminaSocioButton";
+import { BottoneInvio } from "@/components/BottoneInvio";
 import { impostaQuotaAction, impostaRuoloAction } from "@/lib/actions/users";
 import { btnOutline, btnPrimary, inputBase, labelBase } from "@/lib/ui";
 
@@ -36,9 +37,7 @@ export default async function AdminSociePage() {
                   <form action={impostaRuoloAction}>
                     <input type="hidden" name="utenteId" value={a.id} />
                     <input type="hidden" name="ruolo" value="socio" />
-                    <button type="submit" className={`${btnOutline} px-3.5 py-1.5 text-xs`}>
-                      Retrocedi a socio
-                    </button>
+                    <BottoneInvio className={`${btnOutline} px-3.5 py-1.5 text-xs`}>Retrocedi a socio</BottoneInvio>
                   </form>
                   <EliminaSocioButton utenteId={a.id} nome={a.nome} />
                 </div>
@@ -66,9 +65,7 @@ export default async function AdminSociePage() {
                   <form action={impostaRuoloAction}>
                     <input type="hidden" name="utenteId" value={socio.id} />
                     <input type="hidden" name="ruolo" value="admin" />
-                    <button type="submit" className={`${btnOutline} px-3.5 py-1.5 text-xs`}>
-                      Promuovi ad admin
-                    </button>
+                    <BottoneInvio className={`${btnOutline} px-3.5 py-1.5 text-xs`}>Promuovi ad admin</BottoneInvio>
                   </form>
                   <EliminaSocioButton utenteId={socio.id} nome={socio.nome} />
                 </div>
@@ -106,9 +103,7 @@ export default async function AdminSociePage() {
                   <label className={labelBase} htmlFor={`note-${socio.id}`}>Nota (opzionale)</label>
                   <input id={`note-${socio.id}`} name="note" className={inputBase} />
                 </div>
-                <button type="submit" className={`${btnPrimary} px-4 py-2 text-xs`}>
-                  Registra
-                </button>
+                <BottoneInvio className={`${btnPrimary} px-4 py-2 text-xs`}>Registra</BottoneInvio>
               </form>
             </div>
           );

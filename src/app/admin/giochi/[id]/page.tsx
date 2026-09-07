@@ -15,6 +15,8 @@ import { CampoImmagine } from "@/components/CampoImmagine";
 import { creaCopiaAction, mettiOfflineAction, rimettiOnlineAction } from "@/lib/actions/copies";
 import { registraRientroAction } from "@/lib/actions/loans";
 import { aggiornaGiocoAction } from "@/lib/actions/games";
+import { QrCodeCopia } from "@/components/QrCodeCopia";
+import { BottoneInvio } from "@/components/BottoneInvio";
 import { btnAmber, btnDanger, btnOutline, btnPrimary, inputBase, labelBase } from "@/lib/ui";
 
 export default async function AdminGiocoPage({ params }: PageProps<"/admin/giochi/[id]">) {
@@ -195,9 +197,7 @@ export default async function AdminGiocoPage({ params }: PageProps<"/admin/gioch
           )}
 
           <div className="sm:col-span-2">
-            <button type="submit" className={btnAmber}>
-              Salva modifiche
-            </button>
+            <BottoneInvio className={btnAmber}>Salva modifiche</BottoneInvio>
           </div>
         </form>
       </div>
@@ -239,10 +239,12 @@ async function CopiaAdminCard({ copia }: { copia: Copia }) {
     <div className="paper-card rounded-2xl p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div
-            className="h-16 w-16 flex-none [&_svg]:h-full [&_svg]:w-full"
-            dangerouslySetInnerHTML={{ __html: qrSvg }}
-          />
+          <QrCodeCopia codice={copia.codice} qrSvg={qrSvg} copiaId={copia.id}>
+            <span
+              className="block h-16 w-16 flex-none cursor-pointer [&_svg]:h-full [&_svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
+            />
+          </QrCodeCopia>
           <div>
             <p className="font-mono-tag text-lg font-semibold text-ink">{copia.codice}</p>
             <div className="mt-1.5">
@@ -284,9 +286,7 @@ async function CopiaAdminCard({ copia }: { copia: Copia }) {
         {copia.stato === "in_prestito" && prestitoAttivo && (
           <form action={registraRientroAction}>
             <input type="hidden" name="prestitoId" value={prestitoAttivo.id} />
-            <button type="submit" className={`${btnPrimary} px-3.5 py-2 text-xs`}>
-              Registra rientro
-            </button>
+            <BottoneInvio className={`${btnPrimary} px-3.5 py-2 text-xs`}>Registra rientro</BottoneInvio>
           </form>
         )}
         <form action="/api/admin/etichette" method="POST">

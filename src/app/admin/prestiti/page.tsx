@@ -1,6 +1,7 @@
 import { getTuttiIPrestitiConDettagli } from "@/lib/data/enriched";
 import { getUtenteById } from "@/lib/data/users";
 import { BadgeStatoPrestito } from "@/components/StatusBadge";
+import { BottoneInvio } from "@/components/BottoneInvio";
 import { decidiPrestitoAction, registraRientroAction } from "@/lib/actions/loans";
 import { btnDanger, btnPrimary } from "@/lib/ui";
 
@@ -36,16 +37,12 @@ export default async function AdminPrestitiPage() {
                   <form action={decidiPrestitoAction}>
                     <input type="hidden" name="prestitoId" value={prestito.id} />
                     <input type="hidden" name="decisione" value="approva" />
-                    <button type="submit" className={`${btnPrimary} px-3.5 py-1.5 text-xs`}>
-                      Approva
-                    </button>
+                    <BottoneInvio className={`${btnPrimary} px-3.5 py-1.5 text-xs`}>Approva</BottoneInvio>
                   </form>
                   <form action={decidiPrestitoAction}>
                     <input type="hidden" name="prestitoId" value={prestito.id} />
                     <input type="hidden" name="decisione" value="rifiuta" />
-                    <button type="submit" className={`${btnDanger} px-3.5 py-1.5 text-xs`}>
-                      Rifiuta
-                    </button>
+                    <BottoneInvio className={`${btnDanger} px-3.5 py-1.5 text-xs`}>Rifiuta</BottoneInvio>
                   </form>
                 </div>
               </div>
@@ -70,9 +67,7 @@ export default async function AdminPrestitiPage() {
                 </div>
                 <form action={registraRientroAction}>
                   <input type="hidden" name="prestitoId" value={prestito.id} />
-                  <button type="submit" className={`${btnPrimary} px-3.5 py-1.5 text-xs`}>
-                    Registra rientro
-                  </button>
+                  <BottoneInvio className={`${btnPrimary} px-3.5 py-1.5 text-xs`}>Registra rientro</BottoneInvio>
                 </form>
               </div>
             ))}

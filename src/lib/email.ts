@@ -70,7 +70,11 @@ export async function inviaEmailNuovaRichiesta(
   dati: { giocoTitolo: string; socioNome: string }
 ): Promise<void> {
   if (adminEmails.length === 0) return;
-  const { subject, html } = await componiEmail("nuovaRichiesta", dati);
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const { subject, html } = await componiEmail("nuovaRichiesta", {
+    ...dati,
+    linkDashboard: `${base}/admin/prestiti`,
+  });
   await inviaEmail({ to: adminEmails, subject, html });
 }
 

@@ -6,6 +6,7 @@ import { CalendarClock, Search, Ticket } from "lucide-react";
 import type { PrestitoConDettagli } from "@/lib/data/enriched";
 import { BadgeStatoPrestito } from "@/components/StatusBadge";
 import { SelettoreMultiplo } from "@/components/SelettoreMultiplo";
+import { BottoneInvio } from "@/components/BottoneInvio";
 import { annullaPrestitoAction } from "@/lib/actions/loans";
 import { btnOutline, btnSmall, inputBase } from "@/lib/ui";
 import { opzioniDistinte } from "@/lib/filtri";
@@ -117,9 +118,9 @@ export function TabsPrestiti({
                   {prestito.stato === "in_attesa" && (
                     <form action={annullaPrestitoAction}>
                       <input type="hidden" name="prestitoId" value={prestito.id} />
-                      <button type="submit" className={`${btnOutline} px-3.5 py-1.5 text-xs`}>
+                      <BottoneInvio className={`${btnOutline} px-3.5 py-1.5 text-xs`}>
                         Annulla richiesta
-                      </button>
+                      </BottoneInvio>
                     </form>
                   )}
                 </div>
