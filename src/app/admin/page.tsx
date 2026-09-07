@@ -18,7 +18,10 @@ export default async function AdminDashboard() {
   const richiesteNuove = richiesteAcquisto.filter((r) => r.stato === "nuova");
   const annoCorrente = new Date().getFullYear();
   const offline = copie.filter((c) => c.stato === "offline");
-  const nonInRegola = socie.filter((s) => s.ruolo === "socio" && !socioInRegolaPerAnno(s, annoCorrente));
+  // Un admin e' anche un socio ed e' soggetto alla stessa quota (vedi
+  // /admin/socie): niente filtro sul ruolo, altrimenti un admin non in
+  // regola non verrebbe mai contato qui.
+  const nonInRegola = socie.filter((s) => !socioInRegolaPerAnno(s, annoCorrente));
 
   const riquadri = [
     {
