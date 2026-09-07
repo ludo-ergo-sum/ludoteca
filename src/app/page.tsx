@@ -145,11 +145,10 @@ async function CatalogoSezione() {
 function CatalogoSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-11 max-w-sm rounded-xl bg-ink/10" />
-      <div className="mt-3 flex flex-wrap gap-2">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-7 w-20 rounded-full bg-ink/10" />
-        ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="h-11 min-w-[200px] flex-1 rounded-xl bg-ink/10" />
+        <div className="h-8 w-28 rounded-full bg-ink/10" />
+        <div className="h-8 w-28 rounded-full bg-ink/10" />
       </div>
       <div className="mt-4 h-4 w-24 rounded bg-ink/10" />
       <div className="mt-3 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
