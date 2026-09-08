@@ -2,7 +2,14 @@ import "server-only";
 import { store, prossimoIdGioco } from "@/lib/mock/store";
 import type { Gioco, GiocoConDisponibilita } from "@/lib/types";
 import { opzioniDistinte } from "@/lib/filtri";
-import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco, FiltriCatalogo, PaginaCatalogo } from "./games";
+import type {
+  DatiGiocoBgg,
+  DatiModificaGioco,
+  DatiNuovoGioco,
+  FiltriCatalogo,
+  FiltriGiochiAdmin,
+  PaginaCatalogo,
+} from "./games";
 import { normalizzaPaginazione } from "./paginazione";
 
 function conDisponibilita(gioco: Gioco): GiocoConDisponibilita {
@@ -16,6 +23,11 @@ function conDisponibilita(gioco: Gioco): GiocoConDisponibilita {
 
 export async function getGiochi(): Promise<GiocoConDisponibilita[]> {
   return store.giochi.map(conDisponibilita);
+}
+
+export async function getGiochiByIds(ids: string[]): Promise<Gioco[]> {
+  const set = new Set(ids);
+  return store.giochi.filter((g) => set.has(g.id));
 }
 
 // Equivalente mock di games.mongo.ts: qui .length e' gia' O(1) (array in
@@ -51,6 +63,31 @@ export async function getGiochiCatalogo(filtri: FiltriCatalogo): Promise<PaginaC
   const inizio = (pagina - 1) * perPagina;
   const giochi = filtrati.slice(inizio, inizio + perPagina).map(conDisponibilita);
   return { giochi, totale: filtrati.length };
+}
+
+// Equivalente mock di getGiochiAdmin in games.mongo.ts, stessi 5 filtri.
+export async function getGiochiAdmin(filtri: FiltriGiochiAdmin): Promise<PaginaCatalogo> {
+  const ricerca = filtri.ricerca?.trim().toLowerCase() ?? "";
+  const filtrati = store.giochi
+    .map(conDisponibilita)
+    .filter((g) => {
+      const corrispondeTitolo = !ricerca || g.titolo.toLowerCase().includes(ricerca);
+      const corrispondeCategoria =
+        !filtri.categorie?.length || g.categorie.some((c) => filtri.categorie!.includes(c));
+      const corrispondeMeccanica =
+        !filtri.meccaniche?.length || (g.meccaniche ?? []).some((m) => filtri.meccaniche!.includes(m));
+      const corrispondeDisponibilita = !filtri.senzaDisponibili || g.copieDisponibili === 0;
+      const corrispondeSospese =
+        !filtri.conSospese || store.copie.some((c) => c.giocoId === g.id && c.stato === "offline");
+      return (
+        corrispondeTitolo && corrispondeCategoria && corrispondeMeccanica && corrispondeDisponibilita && corrispondeSospese
+      );
+    })
+    .sort((a, b) => a.titolo.localeCompare(b.titolo));
+
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const inizio = (pagina - 1) * perPagina;
+  return { giochi: filtrati.slice(inizio, inizio + perPagina), totale: filtrati.length };
 }
 
 export async function getOpzioniFiltroCatalogo(): Promise<{ categorie: string[]; meccaniche: string[] }> {

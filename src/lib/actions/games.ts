@@ -6,10 +6,12 @@ import {
   aggiornaGioco,
   creaGioco,
   eliminaGioco,
+  getGiochiAdmin,
   getGiochiCatalogo,
   type DatiModificaGioco,
   type DatiNuovoGioco,
   type FiltriCatalogo,
+  type FiltriGiochiAdmin,
   type PaginaCatalogo,
 } from "@/lib/data/games";
 
@@ -19,6 +21,14 @@ import {
 // catalogo e' pubblico, stesso accesso di getGiochi() sulla home.
 export async function cercaCatalogoAction(filtri: FiltriCatalogo): Promise<PaginaCatalogo> {
   return getGiochiCatalogo(filtri);
+}
+
+// Equivalente admin di cercaCatalogoAction, usata da ListaGiochiAdmin
+// in /admin/giochi: qui invece il controllo di ruolo serve, la lista admin
+// non e' pubblica.
+export async function cercaGiochiAdminAction(filtri: FiltriGiochiAdmin): Promise<PaginaCatalogo> {
+  await richiediAdmin();
+  return getGiochiAdmin(filtri);
 }
 
 function listaOpzionale(valore: FormDataEntryValue | null): string[] | undefined {

@@ -56,10 +56,24 @@ async function creaIndici(db: Db): Promise<void> {
     // pagina del catalogo: {giocoId} da solo usa comunque il prefisso di
     // questo indice composto.
     db.collection("copie").createIndex({ giocoId: 1, stato: 1 }),
+    // getGiochiAdmin (senzaDisponibili/conSospese) fa distinct(giocoId)
+    // filtrato per stato: qui serve stato come primo campo, il composto sopra
+    // non basta perche' e' ordinato al contrario.
+    db.collection("copie").createIndex({ stato: 1, giocoId: 1 }),
     db.collection("utenti").createIndex({ email: 1 }, { unique: true }),
     db.collection("utenti").createIndex({ googleId: 1 }, { unique: true, sparse: true }),
+    // getSocieAdmin/contaSocieNonInRegola (tab Tutte/Da-rinnovare/In-regola
+    // di /admin/socie) filtrano con $elemMatch su quote.anno+quote.inRegola.
+    db.collection("utenti").createIndex({ "quote.anno": 1, "quote.inRegola": 1 }),
     db.collection("terminiBgg").createIndex({ tipo: 1, nomeInglese: 1 }, { unique: true }),
+    // getTerminiAdmin (tab da-tradurre/tradotte + filtro con/senza
+    // descrizione di /admin/traduzioni), oltre alla chiave naturale sopra.
+    db.collection("terminiBgg").createIndex({ tipo: 1, daRitradurre: 1 }),
     db.collection("templateEmail").createIndex({ chiave: 1 }, { unique: true }),
+    // getPrestitiConclusi ("Storico completo" di /admin/prestiti, paginato).
+    db.collection("prestiti").createIndex({ stato: 1, dataRichiesta: -1 }),
+    // getRichiesteGestite ("Storico" di /admin/richieste-acquisto, paginato).
+    db.collection("richiesteAcquisto").createIndex({ stato: 1, data: -1 }),
     // Invariante gia' descritto in loans.ts: al massimo un prestito
     // attivo/in attesa per copia. In mock lo garantisce un controllo
     // sincrono, qui un indice unico parziale — due richieste concorrenti

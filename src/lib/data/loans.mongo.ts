@@ -2,11 +2,14 @@ import "server-only";
 import { MongoServerError } from "mongodb";
 import { daDocumento, getDb, idFiltro } from "@/lib/mongo";
 import type { Prestito } from "@/lib/types";
+import type { FiltriPrestiti, PaginaPrestiti } from "./loans";
+import { normalizzaPaginazione } from "./paginazione";
 
 type PrestitoDoc = Omit<Prestito, "id">;
 
 const DURATA_PRESTITO_GIORNI = 360;
 const GIORNI_PREAVVISO_PROMEMORIA = 3;
+const STATI_CONCLUSI = ["rifiutato", "restituito", "annullato"] as const;
 
 function prestitiColl() {
   return getDb().then((db) => db.collection<PrestitoDoc>("prestiti"));
@@ -21,11 +24,6 @@ function aggiungiGiorni(dataIso: string, giorni: number): string {
   return data.toISOString().slice(0, 10);
 }
 
-export async function getPrestiti(): Promise<Prestito[]> {
-  const doc = await (await prestitiColl()).find().toArray();
-  return doc.map(daDocumento);
-}
-
 export async function getPrestitiByUtente(utenteId: string): Promise<Prestito[]> {
   const doc = await (await prestitiColl()).find({ utenteId }).sort({ dataRichiesta: -1 }).toArray();
   return doc.map(daDocumento);
@@ -34,6 +32,32 @@ export async function getPrestitiByUtente(utenteId: string): Promise<Prestito[]>
 export async function getPrestitiInAttesa(): Promise<Prestito[]> {
   const doc = await (await prestitiColl()).find({ stato: "in_attesa" }).toArray();
   return doc.map(daDocumento);
+}
+
+export async function contaPrestitiInAttesa(): Promise<number> {
+  return (await prestitiColl()).countDocuments({ stato: "in_attesa" });
+}
+
+export async function getPrestitiInCorso(): Promise<Prestito[]> {
+  const doc = await (await prestitiColl())
+    .find({ stato: { $in: ["in_corso", "approvato"] } })
+    .sort({ dataApprovazione: -1 })
+    .toArray();
+  return doc.map(daDocumento);
+}
+
+// "Storico completo" di /admin/prestiti: l'unico dei tre elenchi che cresce
+// per sempre (ogni prestito concluso resta qui), quindi l'unico paginato.
+export async function getPrestitiConclusi(filtri: FiltriPrestiti): Promise<PaginaPrestiti> {
+  const query = { stato: { $in: STATI_CONCLUSI } };
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const coll = await prestitiColl();
+  const salto = (pagina - 1) * perPagina;
+  const [docs, totale] = await Promise.all([
+    coll.find(query).sort({ dataRichiesta: -1 }).skip(salto).limit(perPagina).toArray(),
+    coll.countDocuments(query),
+  ]);
+  return { prestiti: docs.map(daDocumento), totale };
 }
 
 export async function getPrestitoAttivoPerCopia(copiaId: string): Promise<Prestito | null> {

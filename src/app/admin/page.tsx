@@ -1,69 +1,69 @@
 import Link from "next/link";
 import { Dices, PauseCircle, ShoppingCart, Stamp, Tag, UserX } from "lucide-react";
-import { getGiochi } from "@/lib/data/games";
-import { getCopieSenzaEtichetta, getTutteLeCopie } from "@/lib/data/copies";
-import { getPrestitiInAttesa } from "@/lib/data/loans";
-import { getRichiesteAcquisto } from "@/lib/data/richiesteAcquisto";
-import { getSocie, socioInRegolaPerAnno } from "@/lib/data/users";
+import { getStatisticheCatalogo } from "@/lib/data/games";
+import { contaCopieOffline, contaCopieSenzaEtichetta } from "@/lib/data/copies";
+import { contaPrestitiInAttesa } from "@/lib/data/loans";
+import { contaRichiesteNuove } from "@/lib/data/richiesteAcquisto";
+import { contaSocieNonInRegola } from "@/lib/data/users";
 
 export default async function AdminDashboard() {
-  const [giochi, copie, copieSenzaEtichetta, inAttesa, richiesteAcquisto, socie] = await Promise.all([
-    getGiochi(),
-    getTutteLeCopie(),
-    getCopieSenzaEtichetta(),
-    getPrestitiInAttesa(),
-    getRichiesteAcquisto(),
-    getSocie(),
-  ]);
-  const richiesteNuove = richiesteAcquisto.filter((r) => r.stato === "nuova");
   const annoCorrente = new Date().getFullYear();
-  const offline = copie.filter((c) => c.stato === "offline");
-  // Un admin e' anche un socio ed e' soggetto alla stessa quota (vedi
-  // /admin/socie): niente filtro sul ruolo, altrimenti un admin non in
-  // regola non verrebbe mai contato qui.
-  const nonInRegola = socie.filter((s) => !socioInRegolaPerAnno(s, annoCorrente));
+  // Ogni riquadro e' un countDocuments (o una query mirata), mai un
+  // find()/toArray() dell'intera collezione per farne poi .length.
+  const [statisticheCatalogo, copieOffline, copieSenzaEtichetta, prestitiInAttesa, richiesteNuove, socieNonInRegola] =
+    await Promise.all([
+      getStatisticheCatalogo(),
+      contaCopieOffline(),
+      contaCopieSenzaEtichetta(),
+      contaPrestitiInAttesa(),
+      contaRichiesteNuove(),
+      // Un admin e' anche un socio ed e' soggetto alla stessa quota (vedi
+      // /admin/socie): contaSocieNonInRegola non filtra sul ruolo, altrimenti
+      // un admin non in regola non verrebbe mai contato qui.
+      contaSocieNonInRegola(annoCorrente),
+    ]);
 
   const riquadri = [
     {
       href: "/admin/prestiti",
       icona: Stamp,
       titolo: "Richieste da approvare",
-      valore: inAttesa.length,
+      valore: prestitiInAttesa,
       nota: "prestiti in attesa",
     },
     {
       href: "/admin/giochi",
       icona: Dices,
       titolo: "Catalogo",
-      valore: giochi.length,
-      nota: `${copie.length} copie totali`,
+      valore: statisticheCatalogo.totaleGiochi,
+      nota: `${statisticheCatalogo.copieTotali} copie totali`,
     },
     {
       href: "/admin/giochi",
       icona: PauseCircle,
       titolo: "Copie fuori linea",
-      valore: offline.length,
+      valore: copieOffline,
       nota: "da verificare",
     },
     {
       href: "/admin/giochi",
       icona: Tag,
       titolo: "Etichette da stampare",
-      valore: copieSenzaEtichetta.length,
+      valore: copieSenzaEtichetta,
       nota: "copie senza etichetta",
     },
     {
       href: "/admin/richieste-acquisto",
       icona: ShoppingCart,
       titolo: "Richieste d'acquisto",
-      valore: richiesteNuove.length,
+      valore: richiesteNuove,
       nota: "da valutare",
     },
     {
       href: "/admin/socie",
       icona: UserX,
       titolo: "Socie da rinnovare",
-      valore: nonInRegola.length,
+      valore: socieNonInRegola,
       nota: `quota ${annoCorrente}`,
     },
   ];

@@ -40,6 +40,24 @@ export async function getCopieSenzaEtichetta(): Promise<Copia[]> {
   return doc.map(daDocumento);
 }
 
+// Solo le copie referenziate da un piccolo insieme di id (es. per arricchire
+// una pagina di prestiti con codice/stato della copia): niente find() senza
+// filtro su tutta la collezione.
+export async function getCopieByIds(ids: string[]): Promise<Copia[]> {
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length === 0) return [];
+  const doc = await (await copieColl()).find({ _id: { $in: objectIds } }).toArray();
+  return doc.map(daDocumento);
+}
+
+export async function contaCopieOffline(): Promise<number> {
+  return (await copieColl()).countDocuments({ stato: "offline" });
+}
+
+export async function contaCopieSenzaEtichetta(): Promise<number> {
+  return (await copieColl()).countDocuments({ dataStampaEtichetta: { $in: [null, undefined] } });
+}
+
 export async function segnaEtichetteStampate(copiaIds: string[]): Promise<void> {
   const oggi = new Date().toISOString().slice(0, 10);
   const ids = copiaIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));

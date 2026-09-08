@@ -1,6 +1,8 @@
 import "server-only";
 import { store } from "@/lib/mock/store";
 import type { TerminBgg, TipoTermineBgg } from "@/lib/types";
+import type { FiltriTermini, PaginaTermini } from "./terminiBgg";
+import { normalizzaPaginazione } from "./paginazione";
 
 export async function getTermine(tipo: TipoTermineBgg, nomeInglese: string): Promise<TerminBgg | null> {
   return (
@@ -49,6 +51,23 @@ export async function getTuttiITermini() {
   return [...store.terminiBgg].sort(
     (a, b) => a.tipo.localeCompare(b.tipo) || a.nomeInglese.localeCompare(b.nomeInglese)
   );
+}
+
+export async function getTerminiAdmin(filtri: FiltriTermini): Promise<PaginaTermini> {
+  const filtrati = store.terminiBgg
+    .filter((t) => {
+      if (t.tipo !== filtri.tipo) return false;
+      if (filtri.daRitradurre === true && !t.daRitradurre) return false;
+      if (filtri.daRitradurre === false && t.daRitradurre) return false;
+      if (filtri.conDescrizione === true && !t.descrizione) return false;
+      if (filtri.conDescrizione === false && t.descrizione) return false;
+      return true;
+    })
+    .sort((a, b) => a.nomeInglese.localeCompare(b.nomeInglese));
+
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const inizio = (pagina - 1) * perPagina;
+  return { termini: filtrati.slice(inizio, inizio + perPagina), totale: filtrati.length };
 }
 
 // Correzione manuale da /admin/traduzioni: conta sempre come traduzione

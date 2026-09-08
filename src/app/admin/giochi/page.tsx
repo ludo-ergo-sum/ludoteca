@@ -1,18 +1,15 @@
-import { getGiochi } from "@/lib/data/games";
-import { getCopieSenzaEtichetta, getTutteLeCopie } from "@/lib/data/copies";
+import { getGiochiAdmin, getOpzioniFiltroCatalogo } from "@/lib/data/games";
+import { contaCopieSenzaEtichetta } from "@/lib/data/copies";
 import { creaGiocoAction } from "@/lib/actions/games";
-import { ListaGiochiAdmin } from "@/components/ListaGiochiAdmin";
+import { ListaGiochiAdmin, PER_PAGINA_GIOCHI_ADMIN } from "@/components/ListaGiochiAdmin";
 import { btnAmber, btnOutline, inputBase, labelBase } from "@/lib/ui";
 
 export default async function AdminGiochiPage() {
-  const [giochi, copie, copieSenzaEtichetta] = await Promise.all([
-    getGiochi(),
-    getTutteLeCopie(),
-    getCopieSenzaEtichetta(),
+  const [{ giochi, totale }, opzioniFiltro, copieSenzaEtichetta] = await Promise.all([
+    getGiochiAdmin({ pagina: 1, perPagina: PER_PAGINA_GIOCHI_ADMIN }),
+    getOpzioniFiltroCatalogo(),
+    contaCopieSenzaEtichetta(),
   ]);
-  const giocoIdsConCopieSospese = Array.from(
-    new Set(copie.filter((c) => c.stato === "offline").map((c) => c.giocoId))
-  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
@@ -21,7 +18,7 @@ export default async function AdminGiochiPage() {
 
       <div className="paper-card mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-5">
         <p className="text-sm text-ink/70">
-          <span className="font-display text-xl text-ink">{copieSenzaEtichetta.length}</span> copie senza etichetta
+          <span className="font-display text-xl text-ink">{copieSenzaEtichetta}</span> copie senza etichetta
           stampata
         </p>
         <form action="/api/admin/etichette" method="POST" className="flex flex-wrap items-center gap-3">
@@ -40,7 +37,7 @@ export default async function AdminGiochiPage() {
       </div>
 
       <div className="mt-8">
-        <ListaGiochiAdmin giochi={giochi} giocoIdsConCopieSospese={giocoIdsConCopieSospese} />
+        <ListaGiochiAdmin giochiIniziali={giochi} totaleIniziale={totale} opzioniFiltro={opzioniFiltro} />
       </div>
 
       <details className="paper-card mt-10 rounded-2xl p-6">

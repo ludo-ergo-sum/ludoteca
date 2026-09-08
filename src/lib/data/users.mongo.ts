@@ -1,6 +1,9 @@
 import "server-only";
+import { ObjectId, type Filter } from "mongodb";
 import { daDocumento, getDb, idFiltro } from "@/lib/mongo";
 import type { QuotaAnnuale, Ruolo, Utente } from "@/lib/types";
+import type { FiltriSocieAdmin, PaginaSocie } from "./users";
+import { normalizzaPaginazione } from "./paginazione";
 
 type UtenteDoc = Omit<Utente, "id">;
 
@@ -32,6 +35,53 @@ export async function getUtenteByEmail(email: string): Promise<Utente | null> {
 export async function getSocie(): Promise<Utente[]> {
   const doc = await (await utentiColl()).find().toArray();
   return doc.map(daDocumento);
+}
+
+// Solo gli utenti referenziati da un piccolo insieme di id (es. per
+// arricchire una pagina di prestiti/richieste d'acquisto col nome del socio).
+export async function getUtentiByIds(ids: string[]): Promise<Utente[]> {
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length === 0) return [];
+  const doc = await (await utentiColl()).find({ _id: { $in: objectIds } }).toArray();
+  return doc.map(daDocumento);
+}
+
+// Piccolo elenco per natura (poche promozioni manuali + email in
+// ADMIN_EMAILS), a differenza di "Socie e quote" che cresce con le
+// iscrizioni: niente paginazione qui, solo una query mirata sul ruolo.
+export async function getAdmins(): Promise<Utente[]> {
+  const doc = await (await utentiColl()).find({ ruolo: "admin" }).toArray();
+  return doc.map(daDocumento);
+}
+
+// Paginazione lato db di /admin/socie: il tab e' una query sulla quota
+// dell'anno indicato (nessun filtro su ruolo: un admin e' anche un socio
+// soggetto alla stessa quota, vedi CLAUDE.md).
+export async function getSocieAdmin(filtri: FiltriSocieAdmin): Promise<PaginaSocie> {
+  const query: Filter<UtenteDoc> = {};
+  if (filtri.filtro === "in_regola") {
+    query.quote = { $elemMatch: { anno: filtri.anno, inRegola: true } };
+  } else if (filtri.filtro === "da_rinnovare") {
+    query.quote = { $not: { $elemMatch: { anno: filtri.anno, inRegola: true } } };
+  }
+
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const coll = await utentiColl();
+  const salto = (pagina - 1) * perPagina;
+  const [docs, totale] = await Promise.all([
+    coll.find(query).sort({ nome: 1 }).skip(salto).limit(perPagina).toArray(),
+    coll.countDocuments(query),
+  ]);
+  return { utenti: docs.map(daDocumento), totale };
+}
+
+// Stesso conteggio usato per il riquadro dashboard "Socie da rinnovare":
+// nessun filtro sul ruolo, altrimenti un admin non in regola non verrebbe
+// mai contato (bug reale gia' capitato, vedi CLAUDE.md).
+export async function contaSocieNonInRegola(anno: number): Promise<number> {
+  return (await utentiColl()).countDocuments({
+    quote: { $not: { $elemMatch: { anno, inRegola: true } } },
+  });
 }
 
 // Chiamata dal callback di NextAuth al primo login: crea il socio se non

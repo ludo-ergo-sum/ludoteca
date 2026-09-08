@@ -1,11 +1,15 @@
-import { getRichiesteAcquistoConDettagli } from "@/lib/data/enriched";
+import { getRichiesteNuoveConDettagli, getRichiesteGestiteConDettagli } from "@/lib/data/enriched";
 import { segnaRichiestaGestitaAction } from "@/lib/actions/richiesteAcquisto";
+import { StoricoRichieste, PER_PAGINA_STORICO_RICHIESTE } from "@/components/StoricoRichieste";
 import { btnPrimary } from "@/lib/ui";
 
 export default async function AdminRichiesteAcquistoPage() {
-  const richieste = await getRichiesteAcquistoConDettagli();
-  const nuove = richieste.filter((r) => r.stato === "nuova");
-  const gestite = richieste.filter((r) => r.stato === "gestita");
+  // "Nuove" resta una query diretta non paginata (coda di lavoro operativa,
+  // per natura limitata): solo lo storico, che cresce per sempre, e' paginato.
+  const [nuove, storicoIniziale] = await Promise.all([
+    getRichiesteNuoveConDettagli(),
+    getRichiesteGestiteConDettagli({ pagina: 1, perPagina: PER_PAGINA_STORICO_RICHIESTE }),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
@@ -48,32 +52,7 @@ export default async function AdminRichiesteAcquistoPage() {
 
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold text-ink">Storico</h2>
-        {gestite.length === 0 ? (
-          <p className="mt-3 text-sm text-ink/60">Nessuna richiesta gestita ancora.</p>
-        ) : (
-          <div className="mt-4 overflow-x-auto rounded-xl border border-ink/10">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="bg-paper-soft text-xs uppercase tracking-wide text-ink/50">
-                <tr>
-                  <th className="px-4 py-2.5">Espansione</th>
-                  <th className="px-4 py-2.5">Gioco base</th>
-                  <th className="px-4 py-2.5">Socio</th>
-                  <th className="px-4 py-2.5">Data</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink/10">
-                {gestite.map((richiesta) => (
-                  <tr key={richiesta.id}>
-                    <td className="px-4 py-2.5">{richiesta.titolo}</td>
-                    <td className="px-4 py-2.5">{richiesta.giocoBaseTitolo}</td>
-                    <td className="px-4 py-2.5">{richiesta.autoreNome}</td>
-                    <td className="px-4 py-2.5">{richiesta.data}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <StoricoRichieste richiesteIniziali={storicoIniziale.richieste} totaleIniziale={storicoIniziale.totale} />
       </section>
     </div>
   );

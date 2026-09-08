@@ -2,11 +2,26 @@
 
 import { revalidatePath } from "next/cache";
 import { richiediAdmin } from "@/lib/session";
-import { eliminaSocio, impostaQuotaAnnuale, impostaRuolo } from "@/lib/data/users";
+import {
+  eliminaSocio,
+  getSocieAdmin,
+  impostaQuotaAnnuale,
+  impostaRuolo,
+  type FiltriSocieAdmin,
+  type PaginaSocie,
+} from "@/lib/data/users";
 import { getPrestitiByUtente } from "@/lib/data/loans";
 import type { Ruolo } from "@/lib/types";
 
 const STATI_PRESTITO_ATTIVI = ["in_attesa", "approvato", "in_corso"];
+
+// Usata da ListaSocieQuote per il tab Tutte/Da-rinnovare/In-regola e per lo
+// scroll infinito: una query db per pagina/filtro, non un .filter() in
+// memoria sull'intero elenco socie.
+export async function cercaSocieAdminAction(filtri: FiltriSocieAdmin): Promise<PaginaSocie> {
+  await richiediAdmin();
+  return getSocieAdmin(filtri);
+}
 
 export async function impostaRuoloAction(formData: FormData) {
   const admin = await richiediAdmin();

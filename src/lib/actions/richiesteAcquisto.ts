@@ -6,6 +6,18 @@ import { creaRichiestaAcquisto, segnaRichiestaGestita } from "@/lib/data/richies
 import { getGiocoById } from "@/lib/data/games";
 import { ADMIN_EMAILS } from "@/lib/data/users";
 import { inviaEmailNuovaRichiestaAcquisto } from "@/lib/email";
+import { getRichiesteGestiteConDettagli, type PaginaRichiesteConDettagli } from "@/lib/data/enriched";
+
+// Usata da StoricoRichieste (sezione "Storico" di /admin/richieste-acquisto)
+// per lo scroll infinito: una query db per pagina, non un .filter() in
+// memoria sull'intero storico richieste.
+export async function cercaStoricoRichiesteAction(filtri: {
+  pagina: number;
+  perPagina: number;
+}): Promise<PaginaRichiesteConDettagli> {
+  await richiediAdmin();
+  return getRichiesteGestiteConDettagli(filtri);
+}
 
 export async function creaRichiestaAcquistoAction(formData: FormData) {
   const socio = await richiediSocio();

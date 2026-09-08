@@ -1,19 +1,21 @@
-import { getSocie } from "@/lib/data/users";
+import { getAdmins, getSocieAdmin } from "@/lib/data/users";
 import { getUtenteCorrente } from "@/lib/session";
 import { EliminaSocioButton } from "@/components/EliminaSocioButton";
 import { BottoneInvio } from "@/components/BottoneInvio";
-import { ListaSocieQuote } from "@/components/ListaSocieQuote";
+import { ListaSocieQuote, PER_PAGINA_SOCIE } from "@/components/ListaSocieQuote";
 import { impostaRuoloAction } from "@/lib/actions/users";
 import { btnOutline } from "@/lib/ui";
 
 export default async function AdminSociePage() {
-  const [tutti, utenteCorrente] = await Promise.all([getSocie(), getUtenteCorrente()]);
-  const admin = tutti.filter((u) => u.ruolo === "admin");
-  // Un admin e' anche un socio: compare qui sotto pure lui, cosi' la sua
-  // quota si rinnova dal pannello come per chiunque altro, senza toccare il
-  // database a mano.
-  const socie = tutti;
   const annoCorrente = new Date().getFullYear();
+  // Un admin e' anche un socio: la query sotto (getSocieAdmin) non filtra per
+  // ruolo, cosi' compare pure lui nell'elenco e la sua quota si rinnova dal
+  // pannello come per chiunque altro, senza toccare il database a mano.
+  const [admin, utenteCorrente, { utenti: socieIniziali, totale: totaleIniziale }] = await Promise.all([
+    getAdmins(),
+    getUtenteCorrente(),
+    getSocieAdmin({ filtro: "tutti", anno: annoCorrente, pagina: 1, perPagina: PER_PAGINA_SOCIE }),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -48,7 +50,7 @@ export default async function AdminSociePage() {
       </section>
 
       <h2 className="mt-10 font-display text-xl font-semibold text-ink">Socie e quote</h2>
-      <ListaSocieQuote socie={socie} annoCorrente={annoCorrente} />
+      <ListaSocieQuote socieIniziali={socieIniziali} totaleIniziale={totaleIniziale} annoCorrente={annoCorrente} />
     </div>
   );
 }

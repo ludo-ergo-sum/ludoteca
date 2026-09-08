@@ -1,8 +1,15 @@
 import "server-only";
-import type { Filter } from "mongodb";
+import { ObjectId, type Filter } from "mongodb";
 import { daDocumento, getDb, idFiltro } from "@/lib/mongo";
 import type { Gioco, GiocoConDisponibilita } from "@/lib/types";
-import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco, FiltriCatalogo, PaginaCatalogo } from "./games";
+import type {
+  DatiGiocoBgg,
+  DatiModificaGioco,
+  DatiNuovoGioco,
+  FiltriCatalogo,
+  FiltriGiochiAdmin,
+  PaginaCatalogo,
+} from "./games";
 import { normalizzaPaginazione } from "./paginazione";
 
 function escapeRegExp(testo: string): string {
@@ -30,6 +37,16 @@ async function conDisponibilita(gioco: Gioco): Promise<GiocoConDisponibilita> {
 export async function getGiochi(): Promise<GiocoConDisponibilita[]> {
   const giochi = (await (await giochiColl()).find().toArray()).map(daDocumento);
   return Promise.all(giochi.map(conDisponibilita));
+}
+
+// Solo i giochi referenziati da un piccolo insieme di id (es. per arricchire
+// una pagina di prestiti/richieste d'acquisto con titolo/gioco): niente
+// countDocuments/copie qui, e' un lookup puro, non serve GiocoConDisponibilita.
+export async function getGiochiByIds(ids: string[]): Promise<Gioco[]> {
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length === 0) return [];
+  const doc = await (await giochiColl()).find({ _id: { $in: objectIds } }).toArray();
+  return doc.map(daDocumento);
 }
 
 // Solo i totali per la home: 3 countDocuments invece di caricare tutti i
@@ -60,6 +77,49 @@ export async function getGiochiCatalogo(filtri: FiltriCatalogo): Promise<PaginaC
   }
   if (filtri.meccaniche?.length) {
     query.meccaniche = { $in: filtri.meccaniche };
+  }
+
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const coll = await giochiColl();
+  const salto = (pagina - 1) * perPagina;
+  const [docs, totale] = await Promise.all([
+    coll.find(query).sort({ titolo: 1 }).skip(salto).limit(perPagina).toArray(),
+    coll.countDocuments(query),
+  ]);
+  const giochi = await Promise.all(docs.map(daDocumento).map(conDisponibilita));
+  return { giochi, totale };
+}
+
+// Equivalente di getGiochiCatalogo per /admin/giochi: stessi filtri di
+// ricerca/categorie/meccaniche, piu' due filtri esclusivi dell'admin che
+// incrociano la collezione copie (senzaDisponibili/conSospese). Niente indice
+// dedicato per questi due: distinct() su copie.stato usa il prefisso
+// dell'indice {stato:1, giocoId:1} (vedi creaIndici in lib/mongo.ts).
+export async function getGiochiAdmin(filtri: FiltriGiochiAdmin): Promise<PaginaCatalogo> {
+  const query: Filter<GiocoDoc> = {};
+  const ricerca = filtri.ricerca?.trim();
+  if (ricerca) {
+    query.titolo = { $regex: escapeRegExp(ricerca), $options: "i" };
+  }
+  if (filtri.categorie?.length) {
+    query.categorie = { $in: filtri.categorie };
+  }
+  if (filtri.meccaniche?.length) {
+    query.meccaniche = { $in: filtri.meccaniche };
+  }
+
+  const copie = await copieColl();
+  const idCondizioni: { $in?: ObjectId[]; $nin?: ObjectId[] } = {};
+  if (filtri.senzaDisponibili) {
+    const idsConDisponibili = await copie.distinct("giocoId", { stato: "disponibile" });
+    idCondizioni.$nin = idsConDisponibili.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  }
+  if (filtri.conSospese) {
+    const idsConSospese = await copie.distinct("giocoId", { stato: "offline" });
+    idCondizioni.$in = idsConSospese.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  }
+  if (idCondizioni.$in || idCondizioni.$nin) {
+    query._id = idCondizioni as Filter<GiocoDoc>["_id"];
   }
 
   const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);

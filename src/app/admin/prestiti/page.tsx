@@ -1,18 +1,22 @@
-import { getTuttiIPrestitiConDettagli } from "@/lib/data/enriched";
-import { getUtenteById } from "@/lib/data/users";
-import { BadgeStatoPrestito } from "@/components/StatusBadge";
+import {
+  getPrestitiInAttesaConDettagli,
+  getPrestitiInCorsoConDettagli,
+  getStoricoPrestitiConDettagli,
+} from "@/lib/data/enriched";
 import { BottoneInvio } from "@/components/BottoneInvio";
 import { decidiPrestitoAction, registraRientroAction } from "@/lib/actions/loans";
+import { StoricoPrestiti, PER_PAGINA_STORICO_PRESTITI } from "@/components/StoricoPrestiti";
 import { btnDanger, btnPrimary } from "@/lib/ui";
 
 export default async function AdminPrestitiPage() {
-  const prestiti = await getTuttiIPrestitiConDettagli();
-  const inAttesa = prestiti.filter((p) => p.stato === "in_attesa");
-  const inCorso = prestiti.filter((p) => p.stato === "in_corso" || p.stato === "approvato");
-  const conclusi = prestiti.filter((p) => !inAttesa.includes(p) && !inCorso.includes(p));
-
-  const socie = await Promise.all(prestiti.map((p) => getUtenteById(p.utenteId)));
-  const socioMap = new Map(prestiti.map((p, i) => [p.id, socie[i]]));
+  // "In attesa"/"in corso" restano query dirette non paginate (insieme di
+  // lavoro operativo, per natura limitato): solo lo storico, che cresce per
+  // sempre, e' paginato (vedi StoricoPrestiti).
+  const [inAttesa, inCorso, storicoIniziale] = await Promise.all([
+    getPrestitiInAttesaConDettagli(),
+    getPrestitiInCorsoConDettagli(),
+    getStoricoPrestitiConDettagli({ pagina: 1, perPagina: PER_PAGINA_STORICO_PRESTITI }),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
@@ -30,7 +34,7 @@ export default async function AdminPrestitiPage() {
                 <div>
                   <p className="font-display text-lg text-ink">{prestito.gioco?.titolo}</p>
                   <p className="font-mono-tag text-xs text-ink/50">
-                    {prestito.copia?.codice} · richiesto da {socioMap.get(prestito.id)?.nome} il {prestito.dataRichiesta}
+                    {prestito.copia?.codice} · richiesto da {prestito.socio?.nome} il {prestito.dataRichiesta}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -62,7 +66,7 @@ export default async function AdminPrestitiPage() {
                 <div>
                   <p className="font-display text-base text-ink">{prestito.gioco?.titolo}</p>
                   <p className="font-mono-tag text-xs text-ink/50">
-                    {prestito.copia?.codice} · a {socioMap.get(prestito.id)?.nome} dal {prestito.dataApprovazione}
+                    {prestito.copia?.codice} · a {prestito.socio?.nome} dal {prestito.dataApprovazione}
                   </p>
                 </div>
                 <form action={registraRientroAction}>
@@ -77,34 +81,7 @@ export default async function AdminPrestitiPage() {
 
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold text-ink">Storico completo</h2>
-        <div className="mt-4 overflow-x-auto rounded-xl border border-ink/10">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="bg-paper-soft text-xs uppercase tracking-wide text-ink/50">
-              <tr>
-                <th className="px-4 py-2.5">Gioco</th>
-                <th className="px-4 py-2.5">Copia</th>
-                <th className="px-4 py-2.5">Socio</th>
-                <th className="px-4 py-2.5">Richiesto</th>
-                <th className="px-4 py-2.5">Restituito</th>
-                <th className="px-4 py-2.5">Stato</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink/10">
-              {conclusi.map((prestito) => (
-                <tr key={prestito.id}>
-                  <td className="px-4 py-2.5">{prestito.gioco?.titolo}</td>
-                  <td className="px-4 py-2.5 font-mono-tag">{prestito.copia?.codice}</td>
-                  <td className="px-4 py-2.5">{socioMap.get(prestito.id)?.nome}</td>
-                  <td className="px-4 py-2.5">{prestito.dataRichiesta}</td>
-                  <td className="px-4 py-2.5">{prestito.dataRestituzioneEffettiva ?? "—"}</td>
-                  <td className="px-4 py-2.5">
-                    <BadgeStatoPrestito stato={prestito.stato} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <StoricoPrestiti prestitiIniziali={storicoIniziale.prestiti} totaleIniziale={storicoIniziale.totale} />
       </section>
     </div>
   );

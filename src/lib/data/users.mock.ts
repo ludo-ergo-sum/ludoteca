@@ -1,6 +1,8 @@
 import "server-only";
 import { store } from "@/lib/mock/store";
 import type { QuotaAnnuale, Ruolo, Utente } from "@/lib/types";
+import type { FiltriSocieAdmin, PaginaSocie } from "./users";
+import { normalizzaPaginazione } from "./paginazione";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "admin@ludoergosum.it")
   .split(",")
@@ -17,6 +19,37 @@ export async function getUtenteByEmail(email: string): Promise<Utente | null> {
 
 export async function getSocie(): Promise<Utente[]> {
   return store.utenti;
+}
+
+export async function getUtentiByIds(ids: string[]): Promise<Utente[]> {
+  const set = new Set(ids);
+  return store.utenti.filter((u) => set.has(u.id));
+}
+
+export async function getAdmins(): Promise<Utente[]> {
+  return store.utenti.filter((u) => u.ruolo === "admin");
+}
+
+function inRegolaPerAnno(utente: Utente, anno: number): boolean {
+  return utente.quote.some((q) => q.anno === anno && q.inRegola);
+}
+
+export async function getSocieAdmin(filtri: FiltriSocieAdmin): Promise<PaginaSocie> {
+  const filtrati = store.utenti
+    .filter((u) => {
+      if (filtri.filtro === "in_regola") return inRegolaPerAnno(u, filtri.anno);
+      if (filtri.filtro === "da_rinnovare") return !inRegolaPerAnno(u, filtri.anno);
+      return true;
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const inizio = (pagina - 1) * perPagina;
+  return { utenti: filtrati.slice(inizio, inizio + perPagina), totale: filtrati.length };
+}
+
+export async function contaSocieNonInRegola(anno: number): Promise<number> {
+  return store.utenti.filter((u) => !inRegolaPerAnno(u, anno)).length;
 }
 
 // Chiamata dal callback di NextAuth al primo login: crea il socio se non

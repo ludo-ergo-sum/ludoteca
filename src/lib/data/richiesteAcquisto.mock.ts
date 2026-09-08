@@ -1,9 +1,25 @@
 import "server-only";
 import { store, prossimoIdRichiestaAcquisto } from "@/lib/mock/store";
 import type { RichiestaAcquisto } from "@/lib/types";
+import type { FiltriRichieste, PaginaRichieste } from "./richiesteAcquisto";
+import { normalizzaPaginazione } from "./paginazione";
 
-export async function getRichiesteAcquisto(): Promise<RichiestaAcquisto[]> {
-  return [...store.richiesteAcquisto].sort((a, b) => b.data.localeCompare(a.data));
+export async function getRichiesteNuove(): Promise<RichiestaAcquisto[]> {
+  return store.richiesteAcquisto.filter((r) => r.stato === "nuova").sort((a, b) => b.data.localeCompare(a.data));
+}
+
+export async function contaRichiesteNuove(): Promise<number> {
+  return store.richiesteAcquisto.filter((r) => r.stato === "nuova").length;
+}
+
+export async function getRichiesteGestite(filtri: FiltriRichieste): Promise<PaginaRichieste> {
+  const filtrati = store.richiesteAcquisto
+    .filter((r) => r.stato === "gestita")
+    .sort((a, b) => b.data.localeCompare(a.data));
+
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const inizio = (pagina - 1) * perPagina;
+  return { richieste: filtrati.slice(inizio, inizio + perPagina), totale: filtrati.length };
 }
 
 export async function creaRichiestaAcquisto(dati: {

@@ -1,25 +1,80 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Utente } from "@/lib/types";
+import type { FiltroSocie } from "@/lib/data/users";
 import { BadgeSocioInRegola } from "@/components/StatusBadge";
 import { EliminaSocioButton } from "@/components/EliminaSocioButton";
 import { BottoneInvio } from "@/components/BottoneInvio";
-import { impostaQuotaAction, impostaRuoloAction } from "@/lib/actions/users";
+import { cercaSocieAdminAction, impostaQuotaAction, impostaRuoloAction } from "@/lib/actions/users";
 import { btnOutline, btnPrimary, inputBase, labelBase } from "@/lib/ui";
 
-type Filtro = "tutti" | "da_rinnovare" | "in_regola";
+export const PER_PAGINA_SOCIE = 20;
 
-export function ListaSocieQuote({ socie, annoCorrente }: { socie: Utente[]; annoCorrente: number }) {
-  const [filtro, setFiltro] = useState<Filtro>("tutti");
+export function ListaSocieQuote({
+  socieIniziali,
+  totaleIniziale,
+  annoCorrente,
+}: {
+  socieIniziali: Utente[];
+  totaleIniziale: number;
+  annoCorrente: number;
+}) {
+  const [filtro, setFiltro] = useState<FiltroSocie>("tutti");
+  const [socie, setSocie] = useState(socieIniziali);
+  const [totale, setTotale] = useState(totaleIniziale);
+  const [pagina, setPagina] = useState(1);
+  const [caricando, setCaricando] = useState(false);
+  const sentinellaRef = useRef<HTMLDivElement>(null);
+  const richiestaCorrente = useRef(0);
+  const primoRender = useRef(true);
 
-  const socieFiltrate = useMemo(() => {
-    if (filtro === "tutti") return socie;
-    return socie.filter((socio) => {
-      const inRegola = socio.quote.find((q) => q.anno === annoCorrente)?.inRegola ?? false;
-      return filtro === "in_regola" ? inRegola : !inRegola;
+  // Cambio tab: query db-side sulla quota dell'anno corrente, non un
+  // .filter() in memoria sull'intero elenco socie (stesso pattern di
+  // CatalogoGiochi/ListaGiochiAdmin).
+  useEffect(() => {
+    if (primoRender.current) {
+      primoRender.current = false;
+      return;
+    }
+    const id = ++richiestaCorrente.current;
+    setCaricando(true);
+    cercaSocieAdminAction({ filtro, anno: annoCorrente, pagina: 1, perPagina: PER_PAGINA_SOCIE }).then((risultato) => {
+      if (id !== richiestaCorrente.current) return;
+      setSocie(risultato.utenti);
+      setTotale(risultato.totale);
+      setPagina(1);
+      setCaricando(false);
     });
-  }, [socie, annoCorrente, filtro]);
+  }, [filtro, annoCorrente]);
+
+  useEffect(() => {
+    const sentinella = sentinellaRef.current;
+    if (!sentinella) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting || caricando || socie.length >= totale) return;
+        const id = ++richiestaCorrente.current;
+        const prossimaPagina = pagina + 1;
+        setCaricando(true);
+        cercaSocieAdminAction({ filtro, anno: annoCorrente, pagina: prossimaPagina, perPagina: PER_PAGINA_SOCIE }).then(
+          (risultato) => {
+            if (id !== richiestaCorrente.current) return;
+            setSocie((precedenti) => [...precedenti, ...risultato.utenti]);
+            setTotale(risultato.totale);
+            setPagina(prossimaPagina);
+            setCaricando(false);
+          }
+        );
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinella);
+    return () => observer.disconnect();
+  }, [pagina, socie.length, totale, caricando, filtro, annoCorrente]);
+
+  const ciSonoAltri = socie.length < totale;
 
   return (
     <div>
@@ -29,7 +84,7 @@ export function ListaSocieQuote({ socie, annoCorrente }: { socie: Utente[]; anno
             ["tutti", "Tutte"],
             ["da_rinnovare", "Da rinnovare"],
             ["in_regola", "In regola"],
-          ] as [Filtro, string][]
+          ] as [FiltroSocie, string][]
         ).map(([valore, etichetta]) => (
           <button
             key={valore}
@@ -46,8 +101,8 @@ export function ListaSocieQuote({ socie, annoCorrente }: { socie: Utente[]; anno
         ))}
       </div>
 
-      <div className="mt-4 space-y-5">
-        {socieFiltrate.map((socio) => {
+      <div className={`mt-4 space-y-5 ${caricando && socie.length === 0 ? "opacity-60" : ""}`}>
+        {socie.map((socio) => {
           const quotaCorrente = socio.quote.find((q) => q.anno === annoCorrente);
           const storico = [...socio.quote].sort((a, b) => b.anno - a.anno);
 
@@ -107,10 +162,16 @@ export function ListaSocieQuote({ socie, annoCorrente }: { socie: Utente[]; anno
           );
         })}
 
-        {socieFiltrate.length === 0 && (
+        {socie.length === 0 && !caricando && (
           <p className="text-sm text-ink/60">Nessuna socia corrisponde al filtro selezionato.</p>
         )}
       </div>
+
+      {ciSonoAltri && (
+        <div ref={sentinellaRef} className="mt-6 text-center text-sm text-ink/40">
+          Caricamento altre socie...
+        </div>
+      )}
     </div>
   );
 }

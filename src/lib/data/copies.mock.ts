@@ -22,6 +22,19 @@ export async function getCopieSenzaEtichetta(): Promise<Copia[]> {
   return store.copie.filter((c) => !c.dataStampaEtichetta);
 }
 
+export async function getCopieByIds(ids: string[]): Promise<Copia[]> {
+  const set = new Set(ids);
+  return store.copie.filter((c) => set.has(c.id));
+}
+
+export async function contaCopieOffline(): Promise<number> {
+  return store.copie.filter((c) => c.stato === "offline").length;
+}
+
+export async function contaCopieSenzaEtichetta(): Promise<number> {
+  return store.copie.filter((c) => !c.dataStampaEtichetta).length;
+}
+
 export async function segnaEtichetteStampate(copiaIds: string[]): Promise<void> {
   const oggi = new Date().toISOString().slice(0, 10);
   const idSet = new Set(copiaIds);

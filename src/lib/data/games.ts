@@ -7,8 +7,10 @@ import * as mongo from "./games.mongo";
 const impl = DATA_MOCK ? mock : mongo;
 
 export const getGiochi = impl.getGiochi;
+export const getGiochiByIds = impl.getGiochiByIds;
 export const getStatisticheCatalogo = impl.getStatisticheCatalogo;
 export const getGiochiCatalogo = impl.getGiochiCatalogo;
+export const getGiochiAdmin = impl.getGiochiAdmin;
 export const getOpzioniFiltroCatalogo = impl.getOpzioniFiltroCatalogo;
 export const getGiocoBySlug = impl.getGiocoBySlug;
 export const getGiocoById = impl.getGiocoById;
@@ -31,6 +33,13 @@ export interface FiltriCatalogo {
 export interface PaginaCatalogo {
   giochi: GiocoConDisponibilita[];
   totale: number;
+}
+
+// Come FiltriCatalogo, con i due filtri aggiuntivi solo per /admin/giochi
+// (incrociano la collezione copie, il catalogo pubblico non li ha).
+export interface FiltriGiochiAdmin extends FiltriCatalogo {
+  senzaDisponibili?: boolean;
+  conSospese?: boolean;
 }
 
 export interface DatiNuovoGioco {

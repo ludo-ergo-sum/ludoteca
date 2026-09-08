@@ -2,8 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { richiediAdmin } from "@/lib/session";
-import { aggiornaTraduzioneTermine } from "@/lib/data/terminiBgg";
+import { aggiornaTraduzioneTermine, getTerminiAdmin, type FiltriTermini, type PaginaTermini } from "@/lib/data/terminiBgg";
 import type { TipoTermineBgg } from "@/lib/types";
+
+// Usata da ListaTerminiAdmin (tab Tutti/Da-tradurre/Tradotte + filtro
+// con/senza descrizione, sezioni Categorie/Meccaniche di /admin/traduzioni)
+// per lo scroll infinito: una query db per pagina/filtro, non un .filter()
+// in memoria sull'intero vocabolario.
+export async function cercaTerminiAction(filtri: FiltriTermini): Promise<PaginaTermini> {
+  await richiediAdmin();
+  return getTerminiAdmin(filtri);
+}
 
 export async function aggiornaTraduzioneTermineAction(formData: FormData) {
   await richiediAdmin();

@@ -1,80 +1,107 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pencil, Search } from "lucide-react";
 import type { GiocoConDisponibilita } from "@/lib/types";
 import { inputBase } from "@/lib/ui";
 import { copertinaPerGioco } from "@/lib/palette";
 import { SelettoreMultiplo } from "@/components/SelettoreMultiplo";
 import { EliminaGiocoButton } from "@/components/EliminaGiocoButton";
-import { opzioniDistinte } from "@/lib/filtri";
+import { cercaGiochiAdminAction } from "@/lib/actions/games";
 import { btnSmall } from "@/lib/ui";
 
-const PER_PAGINA = 20;
+export const PER_PAGINA_GIOCHI_ADMIN = 20;
 
 export function ListaGiochiAdmin({
-  giochi,
-  giocoIdsConCopieSospese,
+  giochiIniziali,
+  totaleIniziale,
+  opzioniFiltro,
 }: {
-  giochi: GiocoConDisponibilita[];
-  giocoIdsConCopieSospese: string[];
+  giochiIniziali: GiocoConDisponibilita[];
+  totaleIniziale: number;
+  opzioniFiltro: { categorie: string[]; meccaniche: string[] };
 }) {
   const [ricerca, setRicerca] = useState("");
+  const [ricercaEffettiva, setRicercaEffettiva] = useState("");
   const [categorieSelezionate, setCategorieSelezionate] = useState<string[]>([]);
   const [meccanicheSelezionate, setMeccanicheSelezionate] = useState<string[]>([]);
   const [soloSenzaDisponibili, setSoloSenzaDisponibili] = useState(false);
   const [soloConSospese, setSoloConSospese] = useState(false);
-  const [visibili, setVisibili] = useState(PER_PAGINA);
+  const [giochi, setGiochi] = useState(giochiIniziali);
+  const [totale, setTotale] = useState(totaleIniziale);
+  const [pagina, setPagina] = useState(1);
+  const [caricando, setCaricando] = useState(false);
   const sentinellaRef = useRef<HTMLDivElement>(null);
+  const richiestaCorrente = useRef(0);
 
-  const sospeseSet = useMemo(() => new Set(giocoIdsConCopieSospese), [giocoIdsConCopieSospese]);
-  const categorieDisponibili = useMemo(() => opzioniDistinte(giochi, (g) => g.categorie), [giochi]);
-  const meccanicheDisponibili = useMemo(() => opzioniDistinte(giochi, (g) => g.meccaniche ?? []), [giochi]);
+  useEffect(() => {
+    const timeout = setTimeout(() => setRicercaEffettiva(ricerca.trim()), 300);
+    return () => clearTimeout(timeout);
+  }, [ricerca]);
 
-  const filtrati = useMemo(() => {
-    const query = ricerca.trim().toLowerCase();
-    return giochi.filter((g) => {
-      const corrispondeTitolo = !query || g.titolo.toLowerCase().includes(query);
-      const corrispondeCategoria =
-        categorieSelezionate.length === 0 || g.categorie.some((c) => categorieSelezionate.includes(c));
-      const corrispondeMeccanica =
-        meccanicheSelezionate.length === 0 || (g.meccaniche ?? []).some((m) => meccanicheSelezionate.includes(m));
-      const corrispondeDisponibilita = !soloSenzaDisponibili || g.copieDisponibili === 0;
-      const corrispondeSospese = !soloConSospese || sospeseSet.has(g.id);
-      return (
-        corrispondeTitolo && corrispondeCategoria && corrispondeMeccanica && corrispondeDisponibilita && corrispondeSospese
-      );
+  const primoRender = useRef(true);
+
+  // Ogni cambio di filtro riparte dalla prima pagina, richiesta al db (stesso
+  // pattern di CatalogoGiochi): niente piu' un .filter() in memoria
+  // sull'intero catalogo caricato una volta per tutte.
+  useEffect(() => {
+    if (primoRender.current) {
+      primoRender.current = false;
+      return;
+    }
+    const id = ++richiestaCorrente.current;
+    setCaricando(true);
+    cercaGiochiAdminAction({
+      ricerca: ricercaEffettiva || undefined,
+      categorie: categorieSelezionate.length ? categorieSelezionate : undefined,
+      meccaniche: meccanicheSelezionate.length ? meccanicheSelezionate : undefined,
+      senzaDisponibili: soloSenzaDisponibili || undefined,
+      conSospese: soloConSospese || undefined,
+      pagina: 1,
+      perPagina: PER_PAGINA_GIOCHI_ADMIN,
+    }).then((risultato) => {
+      if (id !== richiestaCorrente.current) return;
+      setGiochi(risultato.giochi);
+      setTotale(risultato.totale);
+      setPagina(1);
+      setCaricando(false);
     });
-  }, [giochi, ricerca, categorieSelezionate, meccanicheSelezionate, soloSenzaDisponibili, soloConSospese, sospeseSet]);
-
-  const filtroAttuale = `${ricerca}|${categorieSelezionate.slice().sort().join(",")}|${meccanicheSelezionate
-    .slice()
-    .sort()
-    .join(",")}|${soloSenzaDisponibili}|${soloConSospese}`;
-  const [filtroPrecedente, setFiltroPrecedente] = useState(filtroAttuale);
-  if (filtroAttuale !== filtroPrecedente) {
-    setFiltroPrecedente(filtroAttuale);
-    setVisibili(PER_PAGINA);
-  }
+  }, [ricercaEffettiva, categorieSelezionate, meccanicheSelezionate, soloSenzaDisponibili, soloConSospese]);
 
   useEffect(() => {
     const sentinella = sentinellaRef.current;
     if (!sentinella) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setVisibili((v) => Math.min(v + PER_PAGINA, filtrati.length));
-        }
+        if (!entries[0]?.isIntersecting || caricando || giochi.length >= totale) return;
+        const id = ++richiestaCorrente.current;
+        const prossimaPagina = pagina + 1;
+        setCaricando(true);
+        cercaGiochiAdminAction({
+          ricerca: ricercaEffettiva || undefined,
+          categorie: categorieSelezionate.length ? categorieSelezionate : undefined,
+          meccaniche: meccanicheSelezionate.length ? meccanicheSelezionate : undefined,
+          senzaDisponibili: soloSenzaDisponibili || undefined,
+          conSospese: soloConSospese || undefined,
+          pagina: prossimaPagina,
+          perPagina: PER_PAGINA_GIOCHI_ADMIN,
+        }).then((risultato) => {
+          if (id !== richiestaCorrente.current) return;
+          setGiochi((precedenti) => [...precedenti, ...risultato.giochi]);
+          setTotale(risultato.totale);
+          setPagina(prossimaPagina);
+          setCaricando(false);
+        });
       },
       { rootMargin: "200px" }
     );
     observer.observe(sentinella);
     return () => observer.disconnect();
-  }, [filtrati.length]);
+  }, [pagina, giochi.length, totale, caricando, ricercaEffettiva, categorieSelezionate, meccanicheSelezionate, soloSenzaDisponibili, soloConSospese]);
 
-  const daMostrare = filtrati.slice(0, visibili);
-  const ciSonoAltri = visibili < filtrati.length;
+  const ciSonoAltri = giochi.length < totale;
 
   return (
     <div>
@@ -90,18 +117,18 @@ export function ListaGiochiAdmin({
             aria-label="Cerca un gioco per titolo"
           />
         </div>
-        {categorieDisponibili.length > 0 && (
+        {opzioniFiltro.categorie.length > 0 && (
           <SelettoreMultiplo
             etichetta="Categorie"
-            opzioni={categorieDisponibili}
+            opzioni={opzioniFiltro.categorie}
             selezionati={categorieSelezionate}
             onChange={setCategorieSelezionate}
           />
         )}
-        {meccanicheDisponibili.length > 0 && (
+        {opzioniFiltro.meccaniche.length > 0 && (
           <SelettoreMultiplo
             etichetta="Meccaniche"
-            opzioni={meccanicheDisponibili}
+            opzioni={opzioniFiltro.meccaniche}
             selezionati={meccanicheSelezionate}
             onChange={setMeccanicheSelezionate}
           />
@@ -132,12 +159,12 @@ export function ListaGiochiAdmin({
         </button>
       </div>
 
-      <p className="mt-3 text-sm text-ink/50">
-        {filtrati.length} {filtrati.length === 1 ? "gioco" : "giochi"}
+      <p className={`mt-3 text-sm text-ink/50 ${caricando ? "opacity-60" : ""}`}>
+        {totale} {totale === 1 ? "gioco" : "giochi"}
       </p>
 
-      <div className="mt-3 space-y-3">
-        {daMostrare.map((gioco) => {
+      <div className={`mt-3 space-y-3 ${caricando && giochi.length === 0 ? "opacity-60" : ""}`}>
+        {giochi.map((gioco) => {
           const copertina = copertinaPerGioco(gioco.id);
           return (
             <div key={gioco.id} className="hover-lift paper-card flex items-center gap-4 rounded-2xl p-4">
@@ -173,7 +200,9 @@ export function ListaGiochiAdmin({
             </div>
           );
         })}
-        {daMostrare.length === 0 && <p className="py-6 text-center text-sm text-ink/50">Nessun gioco trovato.</p>}
+        {giochi.length === 0 && !caricando && (
+          <p className="py-6 text-center text-sm text-ink/50">Nessun gioco trovato.</p>
+        )}
       </div>
 
       {ciSonoAltri && (

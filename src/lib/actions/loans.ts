@@ -12,6 +12,18 @@ import {
 import { getGiocoById } from "@/lib/data/games";
 import { ADMIN_EMAILS, getUtenteById, socioInRegolaPerAnno } from "@/lib/data/users";
 import { inviaEmailDecisionePrestito, inviaEmailNuovaRichiesta } from "@/lib/email";
+import { getStoricoPrestitiConDettagli, type PaginaPrestitiConDettagli } from "@/lib/data/enriched";
+
+// Usata da StoricoPrestiti (sezione "Storico completo" di /admin/prestiti)
+// per lo scroll infinito: una query db per pagina, non un .filter() in
+// memoria sull'intero storico prestiti.
+export async function cercaStoricoPrestitiAction(filtri: {
+  pagina: number;
+  perPagina: number;
+}): Promise<PaginaPrestitiConDettagli> {
+  await richiediAdmin();
+  return getStoricoPrestitiConDettagli(filtri);
+}
 
 export async function richiediPrestitoAction(formData: FormData) {
   const socio = await richiediSocio();

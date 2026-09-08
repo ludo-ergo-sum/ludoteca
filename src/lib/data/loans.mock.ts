@@ -1,18 +1,17 @@
 import "server-only";
 import { store, prossimoIdPrestito } from "@/lib/mock/store";
-import type { Prestito } from "@/lib/types";
+import type { Prestito, StatoPrestito } from "@/lib/types";
+import type { FiltriPrestiti, PaginaPrestiti } from "./loans";
+import { normalizzaPaginazione } from "./paginazione";
 
 const DURATA_PRESTITO_GIORNI = 360;
 const GIORNI_PREAVVISO_PROMEMORIA = 3;
+const STATI_CONCLUSI: StatoPrestito[] = ["rifiutato", "restituito", "annullato"];
 
 function aggiungiGiorni(dataIso: string, giorni: number): string {
   const data = new Date(dataIso);
   data.setDate(data.getDate() + giorni);
   return data.toISOString().slice(0, 10);
-}
-
-export async function getPrestiti(): Promise<Prestito[]> {
-  return store.prestiti;
 }
 
 export async function getPrestitiByUtente(utenteId: string): Promise<Prestito[]> {
@@ -23,6 +22,26 @@ export async function getPrestitiByUtente(utenteId: string): Promise<Prestito[]>
 
 export async function getPrestitiInAttesa(): Promise<Prestito[]> {
   return store.prestiti.filter((p) => p.stato === "in_attesa");
+}
+
+export async function contaPrestitiInAttesa(): Promise<number> {
+  return store.prestiti.filter((p) => p.stato === "in_attesa").length;
+}
+
+export async function getPrestitiInCorso(): Promise<Prestito[]> {
+  return store.prestiti
+    .filter((p) => p.stato === "in_corso" || p.stato === "approvato")
+    .sort((a, b) => (b.dataApprovazione ?? "").localeCompare(a.dataApprovazione ?? ""));
+}
+
+export async function getPrestitiConclusi(filtri: FiltriPrestiti): Promise<PaginaPrestiti> {
+  const filtrati = store.prestiti
+    .filter((p) => STATI_CONCLUSI.includes(p.stato))
+    .sort((a, b) => b.dataRichiesta.localeCompare(a.dataRichiesta));
+
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const inizio = (pagina - 1) * perPagina;
+  return { prestiti: filtrati.slice(inizio, inizio + perPagina), totale: filtrati.length };
 }
 
 export async function getPrestitoAttivoPerCopia(copiaId: string): Promise<Prestito | null> {
