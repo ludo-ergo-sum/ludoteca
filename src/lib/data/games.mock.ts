@@ -3,6 +3,7 @@ import { store, prossimoIdGioco } from "@/lib/mock/store";
 import type { Gioco, GiocoConDisponibilita } from "@/lib/types";
 import { opzioniDistinte } from "@/lib/filtri";
 import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco, FiltriCatalogo, PaginaCatalogo } from "./games";
+import { normalizzaPaginazione } from "./paginazione";
 
 function conDisponibilita(gioco: Gioco): GiocoConDisponibilita {
   const copie = store.copie.filter((c) => c.giocoId === gioco.id);
@@ -46,8 +47,9 @@ export async function getGiochiCatalogo(filtri: FiltriCatalogo): Promise<PaginaC
     })
     .sort((a, b) => a.titolo.localeCompare(b.titolo));
 
-  const inizio = (filtri.pagina - 1) * filtri.perPagina;
-  const giochi = filtrati.slice(inizio, inizio + filtri.perPagina).map(conDisponibilita);
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
+  const inizio = (pagina - 1) * perPagina;
+  const giochi = filtrati.slice(inizio, inizio + perPagina).map(conDisponibilita);
   return { giochi, totale: filtrati.length };
 }
 

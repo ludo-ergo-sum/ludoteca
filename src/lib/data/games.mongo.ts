@@ -3,6 +3,7 @@ import type { Filter } from "mongodb";
 import { daDocumento, getDb, idFiltro } from "@/lib/mongo";
 import type { Gioco, GiocoConDisponibilita } from "@/lib/types";
 import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco, FiltriCatalogo, PaginaCatalogo } from "./games";
+import { normalizzaPaginazione } from "./paginazione";
 
 function escapeRegExp(testo: string): string {
   return testo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -61,10 +62,11 @@ export async function getGiochiCatalogo(filtri: FiltriCatalogo): Promise<PaginaC
     query.meccaniche = { $in: filtri.meccaniche };
   }
 
+  const { pagina, perPagina } = normalizzaPaginazione(filtri.pagina, filtri.perPagina);
   const coll = await giochiColl();
-  const salto = (filtri.pagina - 1) * filtri.perPagina;
+  const salto = (pagina - 1) * perPagina;
   const [docs, totale] = await Promise.all([
-    coll.find(query).sort({ titolo: 1 }).skip(salto).limit(filtri.perPagina).toArray(),
+    coll.find(query).sort({ titolo: 1 }).skip(salto).limit(perPagina).toArray(),
     coll.countDocuments(query),
   ]);
   const giochi = await Promise.all(docs.map(daDocumento).map(conDisponibilita));
