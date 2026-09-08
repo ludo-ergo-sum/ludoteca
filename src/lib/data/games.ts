@@ -1,11 +1,15 @@
 import "server-only";
 import { DATA_MOCK } from "@/lib/mongo";
+import type { GiocoConDisponibilita } from "@/lib/types";
 import * as mock from "./games.mock";
 import * as mongo from "./games.mongo";
 
 const impl = DATA_MOCK ? mock : mongo;
 
 export const getGiochi = impl.getGiochi;
+export const getStatisticheCatalogo = impl.getStatisticheCatalogo;
+export const getGiochiCatalogo = impl.getGiochiCatalogo;
+export const getOpzioniFiltroCatalogo = impl.getOpzioniFiltroCatalogo;
 export const getGiocoBySlug = impl.getGiocoBySlug;
 export const getGiocoById = impl.getGiocoById;
 export const getGiocoByBggId = impl.getGiocoByBggId;
@@ -13,6 +17,21 @@ export const eliminaGioco = impl.eliminaGioco;
 export const creaGioco = impl.creaGioco;
 export const aggiornaGioco = impl.aggiornaGioco;
 export const sincronizzaGiocoDaBgg = impl.sincronizzaGiocoDaBgg;
+
+// Paginazione lato db del catalogo pubblico (home): il client manda solo
+// filtri + numero di pagina, mai l'intera collezione.
+export interface FiltriCatalogo {
+  ricerca?: string;
+  categorie?: string[];
+  meccaniche?: string[];
+  pagina: number;
+  perPagina: number;
+}
+
+export interface PaginaCatalogo {
+  giochi: GiocoConDisponibilita[];
+  totale: number;
+}
 
 export interface DatiNuovoGioco {
   titolo: string;

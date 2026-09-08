@@ -1,7 +1,8 @@
 import "server-only";
 import { store, prossimoIdGioco } from "@/lib/mock/store";
 import type { Gioco, GiocoConDisponibilita } from "@/lib/types";
-import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco } from "./games";
+import { opzioniDistinte } from "@/lib/filtri";
+import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco, FiltriCatalogo, PaginaCatalogo } from "./games";
 
 function conDisponibilita(gioco: Gioco): GiocoConDisponibilita {
   const copie = store.copie.filter((c) => c.giocoId === gioco.id);
@@ -14,6 +15,47 @@ function conDisponibilita(gioco: Gioco): GiocoConDisponibilita {
 
 export async function getGiochi(): Promise<GiocoConDisponibilita[]> {
   return store.giochi.map(conDisponibilita);
+}
+
+// Equivalente mock di games.mongo.ts: qui .length e' gia' O(1) (array in
+// memoria), la firma esiste solo per restare uguale al dispatcher.
+export async function getStatisticheCatalogo(): Promise<{
+  totaleGiochi: number;
+  copieTotali: number;
+  copieDisponibili: number;
+}> {
+  return {
+    totaleGiochi: store.giochi.length,
+    copieTotali: store.copie.length,
+    copieDisponibili: store.copie.filter((c) => c.stato === "disponibile").length,
+  };
+}
+
+// Equivalente mock di games.mongo.ts: stessa firma/comportamento (filtro,
+// pagina, totale), qui semplicemente su un array in memoria.
+export async function getGiochiCatalogo(filtri: FiltriCatalogo): Promise<PaginaCatalogo> {
+  const ricerca = filtri.ricerca?.trim().toLowerCase() ?? "";
+  const filtrati = store.giochi
+    .filter((g) => {
+      const corrispondeTitolo = !ricerca || g.titolo.toLowerCase().includes(ricerca);
+      const corrispondeCategoria =
+        !filtri.categorie?.length || g.categorie.some((c) => filtri.categorie!.includes(c));
+      const corrispondeMeccanica =
+        !filtri.meccaniche?.length || (g.meccaniche ?? []).some((m) => filtri.meccaniche!.includes(m));
+      return corrispondeTitolo && corrispondeCategoria && corrispondeMeccanica;
+    })
+    .sort((a, b) => a.titolo.localeCompare(b.titolo));
+
+  const inizio = (filtri.pagina - 1) * filtri.perPagina;
+  const giochi = filtrati.slice(inizio, inizio + filtri.perPagina).map(conDisponibilita);
+  return { giochi, totale: filtrati.length };
+}
+
+export async function getOpzioniFiltroCatalogo(): Promise<{ categorie: string[]; meccaniche: string[] }> {
+  return {
+    categorie: opzioniDistinte(store.giochi, (g) => g.categorie),
+    meccaniche: opzioniDistinte(store.giochi, (g) => g.meccaniche ?? []),
+  };
 }
 
 export async function getGiocoBySlug(slug: string): Promise<GiocoConDisponibilita | null> {

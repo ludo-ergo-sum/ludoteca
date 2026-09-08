@@ -46,7 +46,16 @@ async function creaIndici(db: Db): Promise<void> {
   await Promise.all([
     db.collection("giochi").createIndex({ slug: 1 }, { unique: true }),
     db.collection("giochi").createIndex({ bggId: 1 }, { unique: true, sparse: true }),
+    // Catalogo pubblico paginato lato db (getGiochiCatalogo): sort per
+    // titolo e filtro per categorie/meccaniche selezionate.
+    db.collection("giochi").createIndex({ titolo: 1 }),
+    db.collection("giochi").createIndex({ categorie: 1 }),
+    db.collection("giochi").createIndex({ meccaniche: 1 }),
     db.collection("copie").createIndex({ codice: 1 }, { unique: true }),
+    // conDisponibilita (in games.mongo.ts) conta le copie per gioco a ogni
+    // pagina del catalogo: {giocoId} da solo usa comunque il prefisso di
+    // questo indice composto.
+    db.collection("copie").createIndex({ giocoId: 1, stato: 1 }),
     db.collection("utenti").createIndex({ email: 1 }, { unique: true }),
     db.collection("utenti").createIndex({ googleId: 1 }, { unique: true, sparse: true }),
     db.collection("terminiBgg").createIndex({ tipo: 1, nomeInglese: 1 }, { unique: true }),

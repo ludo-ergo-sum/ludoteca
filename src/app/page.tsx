@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { ClipboardList, QrCode, Stamp } from "lucide-react";
-import { getGiochi } from "@/lib/data/games";
+import { getGiochiCatalogo, getOpzioniFiltroCatalogo, getStatisticheCatalogo } from "@/lib/data/games";
 import { auth } from "@/auth";
-import { CatalogoGiochi } from "@/components/CatalogoGiochi";
+import { CatalogoGiochi, PER_PAGINA_CATALOGO } from "@/components/CatalogoGiochi";
 import { btnAmber, btnOutline } from "@/lib/ui";
 
 const passi = [
@@ -98,15 +98,13 @@ export default async function Home() {
 }
 
 async function ScaffaleOggi() {
-  const giochi = await getGiochi();
-  const copieDisponibili = giochi.reduce((tot, g) => tot + g.copieDisponibili, 0);
-  const copieTotali = giochi.reduce((tot, g) => tot + g.copieTotali, 0);
+  const { totaleGiochi, copieTotali, copieDisponibili } = await getStatisticheCatalogo();
 
   return (
     <dl className="mt-4 space-y-3">
       <div className="flex items-baseline justify-between border-b border-dashed border-ink/15 pb-3">
         <dt className="text-sm text-ink/70">Giochi in catalogo</dt>
-        <dd className="font-display text-2xl text-ink">{giochi.length}</dd>
+        <dd className="font-display text-2xl text-ink">{totaleGiochi}</dd>
       </div>
       <div className="flex items-baseline justify-between border-b border-dashed border-ink/15 pb-3">
         <dt className="text-sm text-ink/70">Copie disponibili ora</dt>
@@ -138,8 +136,11 @@ function ScaffaleSkeleton() {
 }
 
 async function CatalogoSezione() {
-  const giochi = await getGiochi();
-  return <CatalogoGiochi giochi={giochi} />;
+  const [{ giochi, totale }, opzioniFiltro] = await Promise.all([
+    getGiochiCatalogo({ pagina: 1, perPagina: PER_PAGINA_CATALOGO }),
+    getOpzioniFiltroCatalogo(),
+  ]);
+  return <CatalogoGiochi paginaIniziale={giochi} totaleIniziale={totale} opzioniFiltro={opzioniFiltro} />;
 }
 
 function CatalogoSkeleton() {

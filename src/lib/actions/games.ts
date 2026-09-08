@@ -2,7 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { richiediAdmin } from "@/lib/session";
-import { aggiornaGioco, creaGioco, eliminaGioco, type DatiModificaGioco, type DatiNuovoGioco } from "@/lib/data/games";
+import {
+  aggiornaGioco,
+  creaGioco,
+  eliminaGioco,
+  getGiochiCatalogo,
+  type DatiModificaGioco,
+  type DatiNuovoGioco,
+  type FiltriCatalogo,
+  type PaginaCatalogo,
+} from "@/lib/data/games";
+
+// Chiamata direttamente dal componente client del catalogo (CatalogoGiochi):
+// una server action puo' essere invocata come una normale funzione async,
+// non solo passata come action di un form. Nessun controllo di ruolo: il
+// catalogo e' pubblico, stesso accesso di getGiochi() sulla home.
+export async function cercaCatalogoAction(filtri: FiltriCatalogo): Promise<PaginaCatalogo> {
+  return getGiochiCatalogo(filtri);
+}
 
 function listaOpzionale(valore: FormDataEntryValue | null): string[] | undefined {
   const elenco = String(valore ?? "")

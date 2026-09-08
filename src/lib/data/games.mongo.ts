@@ -1,7 +1,12 @@
 import "server-only";
+import type { Filter } from "mongodb";
 import { daDocumento, getDb, idFiltro } from "@/lib/mongo";
 import type { Gioco, GiocoConDisponibilita } from "@/lib/types";
-import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco } from "./games";
+import type { DatiGiocoBgg, DatiModificaGioco, DatiNuovoGioco, FiltriCatalogo, PaginaCatalogo } from "./games";
+
+function escapeRegExp(testo: string): string {
+  return testo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 type GiocoDoc = Omit<Gioco, "id">;
 
@@ -24,6 +29,61 @@ async function conDisponibilita(gioco: Gioco): Promise<GiocoConDisponibilita> {
 export async function getGiochi(): Promise<GiocoConDisponibilita[]> {
   const giochi = (await (await giochiColl()).find().toArray()).map(daDocumento);
   return Promise.all(giochi.map(conDisponibilita));
+}
+
+// Solo i totali per la home: 3 countDocuments invece di caricare tutti i
+// giochi e tutte le copie in memoria per poi farne .length.
+export async function getStatisticheCatalogo(): Promise<{
+  totaleGiochi: number;
+  copieTotali: number;
+  copieDisponibili: number;
+}> {
+  const [totaleGiochi, copieTotali, copieDisponibili] = await Promise.all([
+    (await giochiColl()).countDocuments(),
+    (await copieColl()).countDocuments(),
+    (await copieColl()).countDocuments({ stato: "disponibile" }),
+  ]);
+  return { totaleGiochi, copieTotali, copieDisponibili };
+}
+
+// Catalogo pubblico paginato lato db: find() con skip/limit invece di
+// caricare tutta la collezione e scorrerla in memoria.
+export async function getGiochiCatalogo(filtri: FiltriCatalogo): Promise<PaginaCatalogo> {
+  const query: Filter<GiocoDoc> = {};
+  const ricerca = filtri.ricerca?.trim();
+  if (ricerca) {
+    query.titolo = { $regex: escapeRegExp(ricerca), $options: "i" };
+  }
+  if (filtri.categorie?.length) {
+    query.categorie = { $in: filtri.categorie };
+  }
+  if (filtri.meccaniche?.length) {
+    query.meccaniche = { $in: filtri.meccaniche };
+  }
+
+  const coll = await giochiColl();
+  const salto = (filtri.pagina - 1) * filtri.perPagina;
+  const [docs, totale] = await Promise.all([
+    coll.find(query).sort({ titolo: 1 }).skip(salto).limit(filtri.perPagina).toArray(),
+    coll.countDocuments(query),
+  ]);
+  const giochi = await Promise.all(docs.map(daDocumento).map(conDisponibilita));
+  return { giochi, totale };
+}
+
+// Opzioni per i filtri a tendina (categorie/meccaniche): distinct() su tutta
+// la collezione, indipendente dalla pagina corrente, cosi' l'elenco delle
+// opzioni non si restringe man mano che si scorre o si filtra.
+export async function getOpzioniFiltroCatalogo(): Promise<{ categorie: string[]; meccaniche: string[] }> {
+  const coll = await giochiColl();
+  const [categorie, meccaniche] = await Promise.all([
+    coll.distinct("categorie"),
+    coll.distinct("meccaniche"),
+  ]);
+  return {
+    categorie: (categorie as string[]).sort((a, b) => a.localeCompare(b)),
+    meccaniche: (meccaniche as string[]).filter(Boolean).sort((a, b) => a.localeCompare(b)),
+  };
 }
 
 export async function getGiocoBySlug(slug: string): Promise<GiocoConDisponibilita | null> {
