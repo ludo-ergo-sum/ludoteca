@@ -12,6 +12,7 @@ export const DATA_MOCK = process.env.DATA_MOCK === "true";
 const globalForMongo = globalThis as unknown as {
   __lesMongoClient?: Promise<MongoClient>;
   __lesMongoIndiciCreati?: boolean;
+  __lesDb: Db;
 };
 
 // La connessione va aperta solo alla prima chiamata effettiva di getDb(), non
@@ -22,7 +23,7 @@ function client(): Promise<MongoClient> {
   if (!globalForMongo.__lesMongoClient) {
     const uri = process.env.MONGODB_URI;
     if (!uri) throw new Error("MONGODB_URI non impostata (necessaria quando DATA_MOCK non e' true).");
-    globalForMongo.__lesMongoClient = new MongoClient(uri).connect();
+    globalForMongo.__lesMongoClient = new MongoClient(uri, { maxPoolSize: 10, serverSelectionTimeoutMS: 5000 } ).connect();
   }
   return globalForMongo.__lesMongoClient;
 }
@@ -30,12 +31,15 @@ function client(): Promise<MongoClient> {
 export async function getDb(): Promise<Db> {
   const dbName = process.env.DB_NAME;
   if (!dbName) throw new Error("DB_NAME non impostata (necessaria quando DATA_MOCK non e' true).");
-  const db = (await client()).db(dbName);
+  if (globalForMongo.__lesDb) {
+    return globalForMongo.__lesDb
+  }
+  globalForMongo.__lesDb = (await client()).db(dbName);
   if (!globalForMongo.__lesMongoIndiciCreati) {
     globalForMongo.__lesMongoIndiciCreati = true;
-    await creaIndici(db);
+    await creaIndici(globalForMongo.__lesDb);
   }
-  return db;
+  return globalForMongo.__lesDb;
 }
 
 async function creaIndici(db: Db): Promise<void> {
