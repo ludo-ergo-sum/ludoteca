@@ -10,7 +10,7 @@ export function Footer() {
         </div>
         <div className="flex items-center gap-1.5">
           <MapPin size={15} />
-          Via Foce, 40 — Imperia
+          Via Foce, 40 — 18100 Imperia (IM)
         </div>
         <p className="text-xs text-ink/50">Associazione senza scopo di lucro per la promozione dei giochi da tavolo.</p>
       </div>
