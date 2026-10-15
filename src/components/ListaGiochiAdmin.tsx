@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Pencil, Search } from "lucide-react";
+import { LayoutGrid, List, Pencil, Search } from "lucide-react";
 import type { GiocoConDisponibilita } from "@/lib/types";
 import { inputBase } from "@/lib/ui";
 import { copertinaPerGioco } from "@/lib/palette";
@@ -28,6 +28,7 @@ export function ListaGiochiAdmin({
   const [meccanicheSelezionate, setMeccanicheSelezionate] = useState<string[]>([]);
   const [soloSenzaDisponibili, setSoloSenzaDisponibili] = useState(false);
   const [soloConSospese, setSoloConSospese] = useState(false);
+  const [vista, setVista] = useState<"lista" | "griglia">("lista");
   const [giochi, setGiochi] = useState(giochiIniziali);
   const [totale, setTotale] = useState(totaleIniziale);
   const [pagina, setPagina] = useState(1);
@@ -157,28 +158,90 @@ export function ListaGiochiAdmin({
         >
           Con copie sospese
         </button>
+        <div className="ml-auto flex items-center gap-1 rounded-full border border-ink/15 p-1">
+          <button
+            type="button"
+            onClick={() => setVista("lista")}
+            aria-pressed={vista === "lista"}
+            aria-label="Vista a lista"
+            title="Vista a lista"
+            className={`rounded-full p-1.5 transition ${
+              vista === "lista" ? "bg-felt text-card" : "text-ink/50 hover:text-felt"
+            }`}
+          >
+            <List size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setVista("griglia")}
+            aria-pressed={vista === "griglia"}
+            aria-label="Vista a griglia"
+            title="Vista a griglia"
+            className={`rounded-full p-1.5 transition ${
+              vista === "griglia" ? "bg-felt text-card" : "text-ink/50 hover:text-felt"
+            }`}
+          >
+            <LayoutGrid size={16} />
+          </button>
+        </div>
       </div>
 
       <p className={`mt-3 text-sm text-ink/50 ${caricando ? "opacity-60" : ""}`}>
         {totale} {totale === 1 ? "gioco" : "giochi"}
       </p>
 
-      <div className={`mt-3 space-y-3 ${caricando && giochi.length === 0 ? "opacity-60" : ""}`}>
+      <div
+        className={`mt-3 ${vista === "lista" ? "space-y-3" : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"} ${
+          caricando && giochi.length === 0 ? "opacity-60" : ""
+        }`}
+      >
         {giochi.map((gioco) => {
           const copertina = copertinaPerGioco(gioco.id);
+          const immagine = gioco.miniatura || gioco.immagine;
+
+          if (vista === "griglia") {
+            return (
+              <div key={gioco.id} className="hover-lift paper-card flex flex-col overflow-hidden rounded-2xl">
+                <div
+                  className="flex h-32 items-center justify-center overflow-hidden"
+                  style={{ backgroundColor: copertina.bg, color: copertina.fg }}
+                >
+                  {immagine ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- URL esterna (BGG), niente next/image config per un solo campo remoto
+                    <img src={immagine} alt={gioco.titolo} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="font-display text-3xl font-bold">{gioco.titolo.charAt(0)}</span>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <p className="font-display text-lg text-ink">{gioco.titolo}</p>
+                  <p className="text-xs text-ink/50">
+                    {gioco.copieDisponibili} disponibili su {gioco.copieTotali} copie
+                  </p>
+                  <div className="mt-auto flex items-center justify-end gap-1 border-t border-ink/10 pt-2">
+                    <Link
+                      href={`/admin/giochi/${gioco.id}`}
+                      aria-label={`Modifica ${gioco.titolo}`}
+                      className="rounded-full p-2 text-ink/40 transition hover:bg-felt/8 hover:text-felt"
+                    >
+                      <Pencil size={16} />
+                    </Link>
+                    <EliminaGiocoButton giocoId={gioco.id} titolo={gioco.titolo} />
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div key={gioco.id} className="hover-lift paper-card flex items-center gap-4 rounded-2xl p-4">
               <span
                 className="flex h-12 w-12 flex-none items-center justify-center overflow-hidden rounded-xl font-display text-lg font-bold"
                 style={{ backgroundColor: copertina.bg, color: copertina.fg }}
               >
-                {gioco.miniatura || gioco.immagine ? (
+                {immagine ? (
                   // eslint-disable-next-line @next/next/no-img-element -- URL esterna (BGG), niente next/image config per un solo campo remoto
-                  <img
-                    src={gioco.miniatura || gioco.immagine}
-                    alt={gioco.titolo}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={immagine} alt={gioco.titolo} className="h-full w-full object-cover" />
                 ) : (
                   gioco.titolo.charAt(0)
                 )}
@@ -201,7 +264,7 @@ export function ListaGiochiAdmin({
           );
         })}
         {giochi.length === 0 && !caricando && (
-          <p className="py-6 text-center text-sm text-ink/50">Nessun gioco trovato.</p>
+          <p className="py-6 text-center text-sm text-ink/50 sm:col-span-2 lg:col-span-3">Nessun gioco trovato.</p>
         )}
       </div>
 
