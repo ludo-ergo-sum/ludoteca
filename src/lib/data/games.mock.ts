@@ -137,13 +137,13 @@ function slugifica(titolo: string): string {
 // converte nell'array che il modello dati usa uniformemente (coerente con
 // cio' che arriva dalla sync BGG, che puo' avere piu' di un nome).
 export async function creaGioco(dati: DatiNuovoGioco): Promise<Gioco> {
-  const { autore, editore, ...resto } = dati;
+  const { autore, editore, immagine, ...resto } = dati;
   const gioco: Gioco = {
     id: prossimoIdGioco(),
     slug: slugifica(dati.titolo),
-    immagine: "",
     bggId: null,
     ...resto,
+    immagine: immagine ?? "",
     autore: autore ? [autore] : undefined,
     editore: editore ? [editore] : undefined,
   };

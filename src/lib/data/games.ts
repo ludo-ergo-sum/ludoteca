@@ -45,7 +45,10 @@ export interface FiltriGiochiAdmin extends FiltriCatalogo {
 export interface DatiNuovoGioco {
   titolo: string;
   descrizione: string;
+  immagine?: string;
+  miniatura?: string;
   categorie: string[];
+  meccaniche?: string[];
   giocatoriMin: number;
   giocatoriMax: number;
   durataMinutiMin: number;
@@ -53,6 +56,7 @@ export interface DatiNuovoGioco {
   etaMinima: number;
   autore?: string;
   editore?: string;
+  illustratori?: string[];
   anno?: number;
   difficolta: 1 | 2 | 3 | 4 | 5;
 }

@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { getTuttiITermini } from "@/lib/data/terminiBgg";
 import { creaGiocoAction } from "@/lib/actions/games";
+import { CampoMultiSelezione } from "@/components/CampoMultiSelezione";
+import { CampoImmagine } from "@/components/CampoImmagine";
 import { BottoneInvio } from "@/components/BottoneInvio";
 import { btnAmber, inputBase, labelBase } from "@/lib/ui";
 
-export default function AdminNuovoGiocoPage() {
+export default async function AdminNuovoGiocoPage() {
+  const termini = await getTuttiITermini();
+  const categorieDisponibili = termini.filter((t) => t.tipo === "categoria").map((t) => t.nomeItaliano);
+  const meccanicheDisponibili = termini.filter((t) => t.tipo === "meccanica").map((t) => t.nomeItaliano);
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <Link href="/admin/giochi" className="inline-flex items-center gap-1.5 text-sm text-ink/60 hover:text-felt">
@@ -24,8 +31,20 @@ export default function AdminNuovoGiocoPage() {
             <textarea id="descrizione" name="descrizione" required rows={4} className={inputBase} />
           </div>
           <div className="sm:col-span-2">
-            <label className={labelBase} htmlFor="categorie">Categorie (separate da virgola)</label>
-            <input id="categorie" name="categorie" placeholder="Famiglia, Strategia" className={inputBase} />
+            <label className={labelBase} htmlFor="immagine">URL immagine</label>
+            <CampoImmagine id="immagine" name="immagine" defaultValue="" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelBase} htmlFor="miniatura">URL miniatura</label>
+            <CampoImmagine id="miniatura" name="miniatura" defaultValue="" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelBase}>Categorie</label>
+            <CampoMultiSelezione name="categorie" etichetta="Categorie" opzioni={categorieDisponibili} valoriIniziali={[]} />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelBase}>Meccaniche</label>
+            <CampoMultiSelezione name="meccaniche" etichetta="Meccaniche" opzioni={meccanicheDisponibili} valoriIniziali={[]} />
           </div>
           <div>
             <label className={labelBase} htmlFor="giocatoriMin">Giocatori minimi</label>
@@ -58,6 +77,10 @@ export default function AdminNuovoGiocoPage() {
           <div>
             <label className={labelBase} htmlFor="editore">Editore</label>
             <input id="editore" name="editore" className={inputBase} />
+          </div>
+          <div>
+            <label className={labelBase} htmlFor="illustratori">Illustratori (separati da virgola)</label>
+            <input id="illustratori" name="illustratori" className={inputBase} />
           </div>
           <div>
             <label className={labelBase} htmlFor="anno">Anno di pubblicazione</label>

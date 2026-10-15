@@ -46,10 +46,10 @@ export async function creaGiocoAction(formData: FormData) {
   const dati: DatiNuovoGioco = {
     titolo: String(formData.get("titolo")),
     descrizione: String(formData.get("descrizione")),
-    categorie: String(formData.get("categorie") ?? "")
-      .split(",")
-      .map((c) => c.trim())
-      .filter(Boolean),
+    immagine: String(formData.get("immagine") ?? "") || undefined,
+    miniatura: String(formData.get("miniatura") ?? "") || undefined,
+    categorie: listaOpzionale(formData.get("categorie")) ?? [],
+    meccaniche: listaOpzionale(formData.get("meccaniche")),
     giocatoriMin: Number(formData.get("giocatoriMin")),
     giocatoriMax: Number(formData.get("giocatoriMax")),
     durataMinutiMin: Number(formData.get("durataMinutiMin")),
@@ -57,6 +57,7 @@ export async function creaGiocoAction(formData: FormData) {
     etaMinima: Number(formData.get("etaMinima")),
     autore: String(formData.get("autore") ?? "") || undefined,
     editore: String(formData.get("editore") ?? "") || undefined,
+    illustratori: listaOpzionale(formData.get("illustratori")),
     anno: formData.get("anno") ? Number(formData.get("anno")) : undefined,
     difficolta: Number(formData.get("difficolta") ?? 2) as DatiNuovoGioco["difficolta"],
   };
