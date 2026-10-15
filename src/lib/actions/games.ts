@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { richiediAdmin } from "@/lib/session";
 import {
   aggiornaGioco,
@@ -60,9 +61,10 @@ export async function creaGiocoAction(formData: FormData) {
     difficolta: Number(formData.get("difficolta") ?? 2) as DatiNuovoGioco["difficolta"],
   };
 
-  await creaGioco(dati);
+  const gioco = await creaGioco(dati);
   revalidatePath("/");
   revalidatePath("/admin/giochi");
+  redirect(`/admin/giochi/${gioco.id}`);
 }
 
 export async function aggiornaGiocoAction(formData: FormData) {
