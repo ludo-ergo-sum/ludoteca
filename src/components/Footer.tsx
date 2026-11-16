@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Dice5, MapPin } from "lucide-react";
 
 export function Footer() {
@@ -14,6 +15,14 @@ export function Footer() {
         </div>
         <p className="text-xs text-ink/50">Associazione senza scopo di lucro per la promozione dei giochi da tavolo.</p>
       </div>
+      <nav className="mx-auto flex max-w-6xl flex-wrap gap-x-5 gap-y-2 border-t border-ink/10 px-4 py-4 text-xs text-ink/60 sm:px-6">
+        <Link href="/privacy" className="hover:text-felt hover:underline">
+          Privacy
+        </Link>
+        <Link href="/termini-di-servizio" className="hover:text-felt hover:underline">
+          Termini di servizio
+        </Link>
+      </nav>
     </footer>
   );
 }
